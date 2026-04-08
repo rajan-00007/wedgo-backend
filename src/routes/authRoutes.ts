@@ -14,4 +14,7 @@ router.post("/send-otp", (req, res) => {
 // Route to verify OTP and login/signup
 router.post("/verify-otp", (req, res) => authController.verifyOTP(req, res));
 
+// Route to refresh tokens
+router.post("/refresh-token", (req, res) => authController.refreshToken(req, res));
+
 export default router;

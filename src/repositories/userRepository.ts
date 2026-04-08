@@ -31,6 +31,14 @@ export class UserRepository {
       [id]
     );
   }
+
+  async findById(id: string): Promise<User | null> {
+    const result = await pool.query(
+      "SELECT * FROM users WHERE id = $1",
+      [id]
+    );
+    return result.rows[0] || null;
+  }
 }
 
 export default new UserRepository();

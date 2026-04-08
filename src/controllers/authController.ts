@@ -3,10 +3,13 @@ import jwt from "jsonwebtoken";
 import userRepository from "../repositories/userRepository";
 import otpRepository from "../repositories/otpRepository";
 import coupleProfileRepository from "../repositories/coupleProfileRepository";
+import refreshTokenRepository from "../repositories/refreshTokenRepository";
 import crypto from "crypto";
 import { msg91Provider } from "../providers/msg91Provider";
+import logger from "../utils/logger";
 
-const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET || "access_secret";
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "refresh_secret";
 
 export class AuthController {
   // 1. Send OTP (Generate & Store)
@@ -17,7 +20,6 @@ export class AuthController {
       return;
     }
 
-    // For now, simple random 4-digit OTP
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
     const sessionId = crypto.randomUUID();
@@ -25,24 +27,20 @@ export class AuthController {
     try {
       await otpRepository.createOTP(sessionId, phoneNumber, otpCode, expiresAt);
       
-      // Since it's mockup for now
-      console.log(`[OTP Mock] Phone: ${phoneNumber}, Code: ${otpCode}`);
+      logger.info(`[OTP] Phone: ${phoneNumber}, Code: ${otpCode}, Session: ${sessionId}`);
 
-      // Send OTP via MSG91
       try {
         await msg91Provider.send(phoneNumber, `Your OTP is ${otpCode}`, { otp: otpCode });
       } catch (providerError: any) {
-        console.error("Failed to send OTP via MSG91:", providerError.message);
-        
+        logger.error("Failed to send OTP via MSG91:", providerError.message);
       }
       
       res.status(200).json({ 
         message: "OTP sent successfully.", 
-        sessionId: sessionId,
-        otpCode: otpCode
+        sessionId: sessionId
       });
     } catch (error) {
-      console.error("Error creating OTP:", error);
+      logger.error("Error creating OTP:", error);
       res.status(500).json({ message: "Failed to send OTP." });
     }
   }
@@ -62,32 +60,50 @@ export class AuthController {
         return;
       }
 
-      // Mark OTP as used
       await otpRepository.markOTPUsed(latestOTP.id);
 
       const phoneNumber = latestOTP.phone_number;
 
-      // Check if user exists
       let user = await userRepository.findByPhoneNumber(phoneNumber);
-      let isNewUser = false;
-
       if (!user) {
         user = await userRepository.createUser(phoneNumber);
-        isNewUser = true;
       }
 
-      // If user exists, check if profile exists
       const profile = await coupleProfileRepository.findByUserId(user.id);
       const needsProfile = !profile;
 
-      // Generate JWT
-      const token = jwt.sign({ id: user.id, phoneNumber: user.phone_number }, JWT_SECRET, {
-        expiresIn: "1h",
+      const accessToken = jwt.sign(
+        { id: user.id, phoneNumber: user.phone_number },
+        ACCESS_TOKEN_SECRET,
+        { expiresIn: "1h" }
+      );
+
+      const refreshToken = jwt.sign(
+        { id: user.id },
+        REFRESH_TOKEN_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      // Save refresh token in DB with expiration (7 days)
+      const rtExpiresAt = new Date(Date.now() + 7 * 24 * 3600000);
+      await refreshTokenRepository.createRefreshToken(user.id, refreshToken, rtExpiresAt);
+
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 3600000, 
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 3600000, 
       });
 
       res.status(200).json({
         message: "OTP verified correctly.",
-        token,
         user: {
           id: user.id,
           phoneNumber: user.phone_number,
@@ -97,8 +113,58 @@ export class AuthController {
         profile: profile || null,
       });
     } catch (error) {
-      console.error("Error verifying OTP:", error);
+      logger.error("Error verifying OTP:", error);
       res.status(500).json({ message: "Failed to verify OTP." });
+    }
+  }
+
+  // 3. Refresh Access Token
+  async refreshToken(req: Request, res: Response): Promise<void> {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (!refreshToken) {
+      res.status(401).json({ message: "Refresh token is required." });
+      return;
+    }
+
+    try {
+      const storedToken = await refreshTokenRepository.findValidToken(refreshToken);
+      if (!storedToken) {
+        res.status(403).json({ message: "Invalid or expired refresh token." });
+        return;
+      }
+
+      jwt.verify(refreshToken, REFRESH_TOKEN_SECRET, async (err: any, decoded: any) => {
+        if (err || storedToken.user_id !== decoded.id) {
+          res.status(403).json({ message: "Invalid refresh token." });
+          return;
+        }
+
+        // Rotate access token
+        const user = await userRepository.findById(storedToken.user_id);
+        if (!user) {
+          res.status(403).json({ message: "User not found." });
+          return;
+        }
+
+        const accessToken = jwt.sign(
+          { id: user.id, phoneNumber: user.phone_number },
+          ACCESS_TOKEN_SECRET,
+          { expiresIn: "1h" }
+        );
+
+        res.cookie("accessToken", accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 3600000,
+        });
+
+        res.status(200).json({ message: "Token refreshed successfully." });
+      });
+    } catch (error) {
+      logger.error("Refresh token error:", error);
+      res.status(500).json({ message: "Failed to refresh token." });
     }
   }
 }

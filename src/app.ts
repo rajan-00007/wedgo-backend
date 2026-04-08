@@ -1,16 +1,24 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/authRoutes';
 import profileRoutes from './routes/profileRoutes';
 import wallpaperRoutes from './routes/wallpaperRoutes';
 import { join } from 'path';
+import { loggerMiddleware } from './middlewares/loggerMiddleware';
+import logger from './utils/logger';
 
 const app: Application = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(loggerMiddleware);
 
 
 // Routes
@@ -39,7 +47,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('[ERROR] Middleware:', err.stack);
+  logger.error(`Middleware Error: ${err.stack}`);
   res.status(500).json({
     status: 'error',
     message: err.message || 'Something went wrong!',
