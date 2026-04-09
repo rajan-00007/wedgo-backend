@@ -27,3 +27,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.swp
+
+test_output.txt
+
+coverage

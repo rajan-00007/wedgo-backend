@@ -1,5 +1,8 @@
-import { Pool } from "pg";  
+import { Pool, types } from "pg";  
 import * as dotenv from "dotenv";
+
+types.setTypeParser(1082, (val) => val); 
+
 
 dotenv.config({ quiet: true } as any);
 

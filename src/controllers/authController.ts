@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import userRepository from "../repositories/userRepository";
-import otpRepository from "../repositories/otpRepository";
+import userRepository from "../repositories/auths/userRepository";
+import otpRepository from "../repositories/auths/otpRepository";
 import coupleProfileRepository from "../repositories/coupleProfileRepository";
-import refreshTokenRepository from "../repositories/refreshTokenRepository";
+import refreshTokenRepository from "../repositories/auths/refreshTokenRepository";
 import crypto from "crypto";
 import { msg91Provider } from "../providers/msg91Provider";
 import logger from "../utils/logger";
@@ -75,7 +75,7 @@ export class AuthController {
       const accessToken = jwt.sign(
         { id: user.id, phoneNumber: user.phone_number },
         ACCESS_TOKEN_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "9h" }
       );
 
       const refreshToken = jwt.sign(

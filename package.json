@@ -7,7 +7,9 @@
     "start": "node dist/server.js",
     "dev": "nodemon --watch src --ext ts,json --exec ts-node src/server.ts",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+
   },
   "keywords": [],
   "author": "",
@@ -22,7 +24,8 @@
     "minio": "^8.0.7",
     "multer": "^2.1.1",
     "pg": "^8.20.0",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
