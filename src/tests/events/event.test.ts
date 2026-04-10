@@ -32,8 +32,8 @@ describe("Events CRUD Operations", () => {
       };
 
       (pool.query as jest.Mock)
-        .mockResolvedValueOnce({ rows: [mockProfile] }) // For coupleProfileRepository.findByUserId
-        .mockResolvedValueOnce({ rows: [mockEvent] }); // For eventsRepository.createEvent
+        .mockResolvedValueOnce({ rows: [mockProfile] }) 
+        .mockResolvedValueOnce({ rows: [mockEvent] }); 
 
       const response = await request(app)
         .post("/api/events")

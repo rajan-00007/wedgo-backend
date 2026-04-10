@@ -5,6 +5,8 @@ import authRoutes from './routes/authRoutes';
 import profileRoutes from './routes/profileRoutes';
 import wallpaperRoutes from './routes/wallpaperRoutes';
 import eventRoutes from './routes/events/eventRoutes';
+import blessingRoutes from './routes/blessings/blessingRoutes';
+import mediaRoutes from './routes/media/mediaRoutes';
 import { loggerMiddleware } from './middlewares/loggerMiddleware';
 import logger from './utils/logger';
 
@@ -29,6 +31,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/wallpapers', wallpaperRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/blessings', blessingRoutes);
+app.use('/api/media', mediaRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({

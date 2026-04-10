@@ -1,5 +1,5 @@
-import pool from "../config/database";
-import { hashToken } from "../utils/hash";
+import pool from "../../config/database";
+import { hashToken } from "../../utils/hash";
 
 export interface RefreshToken {
   id: string;

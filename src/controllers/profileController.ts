@@ -20,9 +20,9 @@ export class ProfileController {
         profile = await coupleProfileRepository.createProfile(userId, partner1, partner2, new Date(eventDate), wallpaper_type, wallpaper_id);
       }
 
-      res.status(200).json({ 
-        message: "Profile updated successfully.", 
-        profile 
+      res.status(200).json({
+        message: "Profile updated successfully.",
+        profile
       });
     } catch (error) {
       console.error("Error upserting profile:", error);
@@ -63,7 +63,7 @@ export class ProfileController {
       console.error("Error updating preset wallpaper:", error);
       res.status(500).json({ message: "Failed to update wallpaper." });
     }
-  } 
+  }
 
   async uploadCustomWallpaper(req: Request, res: Response): Promise<void> {
     const userId = (req as any).user.id;
@@ -73,18 +73,18 @@ export class ProfileController {
       res.status(400).json({ message: "No image files uploaded." });
       return;
     }
- 
+
     try {
       // 1. Upload to MinIO in parallel
       const uploadPromises = files.map(file => uploadImage(file, "wallpapers"));
       const objectNames = await Promise.all(uploadPromises);
-      
+
       // 2. Update DB with the array of object paths
       await coupleProfileRepository.setCustomWallpaperUrls(userId, objectNames);
 
-      res.status(200).json({ 
-        message: "Custom wallpapers uploaded successfully.", 
-        urls: objectNames 
+      res.status(200).json({
+        message: "Custom wallpapers uploaded successfully.",
+        urls: objectNames
       });
     } catch (error) {
       console.error("Error uploading custom wallpapers:", error);

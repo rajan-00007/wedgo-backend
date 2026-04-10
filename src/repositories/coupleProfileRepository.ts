@@ -22,6 +22,14 @@ export class CoupleProfileRepository {
     return result.rows[0] || null;
   }
 
+  async findById(id: string): Promise<CoupleProfile | null> {
+    const result = await pool.query(
+      "SELECT * FROM couple_profiles WHERE id = $1",
+      [id]
+    );
+    return result.rows[0] || null;
+  }
+
   async createProfile(userId: string, partner1: string, partner2: string, eventDate: Date, wallpaperType?: string, wallpaperId?: string): Promise<CoupleProfile> {
     const result = await pool.query(
       "INSERT INTO couple_profiles (user_id, partner1_name, partner2_name, event_date, wallpaper_type, wallpaper_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
