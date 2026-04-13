@@ -9,7 +9,6 @@
     "build": "tsc",
     "test": "jest",
     "test:coverage": "jest --coverage"
-
   },
   "keywords": [],
   "author": "",
@@ -24,6 +23,7 @@
     "minio": "^8.0.7",
     "multer": "^2.1.1",
     "pg": "^8.20.0",
+    "qrcode": "^1.5.4",
     "winston": "^3.19.0",
     "zod": "^4.3.6"
   },

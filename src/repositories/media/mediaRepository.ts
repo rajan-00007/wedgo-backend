@@ -4,18 +4,19 @@ export interface Media {
   id: string;
   couple_id: string;
   file_url: string;
+  file_type: "image" | "video";
   is_pinned: boolean;
   created_at: Date;
 }
 
 class MediaRepository {
-  async createMedia(data: { couple_id: string; file_url: string }): Promise<Media> {
+  async createMedia(data: { couple_id: string; file_url: string; file_type: "image" | "video" }): Promise<Media> {
     const query = `
-      INSERT INTO media (couple_id, file_url)
-      VALUES ($1, $2)
+      INSERT INTO media (couple_id, file_url, file_type)
+      VALUES ($1, $2, $3)
       RETURNING *;
     `;
-    const values = [data.couple_id, data.file_url];
+    const values = [data.couple_id, data.file_url, data.file_type];
     const { rows } = await pool.query(query, values);
     return rows[0];
   }

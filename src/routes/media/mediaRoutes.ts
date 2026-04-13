@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia } from "../../controllers/media/mediaController";
+import { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia, getAllMedia } from "../../controllers/media/mediaController";
 import { authenticateToken } from "../../middlewares/auth/authMiddleware";
-import { upload } from "../../middlewares/multer/upload";
+import { upload, uploadMediaFiles } from "../../middlewares/multer/upload";
 
 const router = Router();
 
@@ -10,7 +10,14 @@ const router = Router();
  * @desc Upload media for a couple profile
  * @access Public
  */
-router.post("/:coupleId", upload.any(), uploadMedia);
+router.post("/:coupleId", uploadMediaFiles.any(), uploadMedia);
+
+/**
+ * @route GET /api/media/all/:coupleId
+ * @desc Get all media for a specific couple
+ * @access Public
+ */
+router.get("/all/:coupleId", getAllMedia);
 
 /**
  * @route GET /api/media/:coupleId

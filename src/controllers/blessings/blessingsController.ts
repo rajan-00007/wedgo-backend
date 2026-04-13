@@ -95,3 +95,25 @@ export const getPublicBlessings = async (req: Request, res: Response): Promise<v
     res.status(500).json({ message: "Failed to fetch blessings." });
   }
 };
+
+/**
+ * @desc Get all blessings for a specific couple profile (Public/User)
+ * @route GET /api/blessings/all/:coupleId
+ * @access Public
+ */
+export const getAllBlessings = async (req: Request, res: Response): Promise<void> => {
+  const { coupleId } = req.params;
+
+  if (!coupleId || typeof coupleId !== "string") {
+    res.status(400).json({ message: "Couple ID is required." });
+    return;
+  }
+
+  try {
+    const blessings = await blessingRepositories.findByCoupleId(coupleId);
+    res.status(200).json({ blessings });
+  } catch (error) {
+    logger.error(`Error fetching all blessings for couple ${coupleId}: ${error}`);
+    res.status(500).json({ message: "Failed to fetch all blessings." });
+  }
+};

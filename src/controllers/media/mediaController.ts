@@ -34,25 +34,29 @@ export const uploadMedia = async (req: Request, res: Response): Promise<void> =>
 
     for (const file of files) {
       const fileUrl = await uploadImage(file, "media");
+      const fileType = file.mimetype.startsWith("video/") ? "video" : "image";
 
       const media = await mediaRepository.createMedia({
         couple_id: profile.id,
         file_url: fileUrl,
+        file_type: fileType as "image" | "video",
       });
 
       mediaResults.push(media);
-      logger.info(`Media uploaded: ${media.id} for couple: ${profile.id}`);
+      logger.info(`${fileType} uploaded: ${media.id} for couple: ${profile.id}`);
     }
 
-    res.status(201).json({ 
-      message: `${files.length} media file(s) uploaded successfully.`, 
-      media: mediaResults 
+
+    res.status(201).json({
+      message: `${files.length} media file(s) uploaded successfully.`,
+      media: mediaResults
     });
   } catch (error) {
     logger.error(`Error uploading media: ${error}`);
     res.status(500).json({ message: "Failed to upload media." });
   }
 };
+
 
 /**
  * @desc Get all media for the authenticated user's profile (Admin)
@@ -74,7 +78,7 @@ export const getAdminMedia = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const media = await mediaRepository.findByCoupleId(profile.id);
-    res.status(200).json({ media });     
+    res.status(200).json({ media });
   } catch (error) {
     logger.error(`Error fetching admin media: ${error}`);
     res.status(500).json({ message: "Internal server error while fetching media" });
@@ -114,9 +118,9 @@ export const toggleMediaPin = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const updatedMedia = await mediaRepository.updatePinStatus(mediaId, isPinned);
-    res.status(200).json({ 
-      message: `Media ${isPinned ? 'pinned' : 'unpinned'} successfully`, 
-      media: updatedMedia 
+    res.status(200).json({
+      message: `Media ${isPinned ? 'pinned' : 'unpinned'} successfully`,
+      media: updatedMedia
     });
   } catch (error) {
     logger.error(`Error toggling media pin: ${error}`);
@@ -142,5 +146,26 @@ export const getPublicMedia = async (req: Request, res: Response): Promise<void>
   } catch (error) {
     logger.error(`Error fetching media for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch media." });
+  }
+};
+
+/**
+ * @desc Get all media for a specific couple (Public/User)
+ * @route GET /api/media/all/:coupleId
+ */
+export const getAllMedia = async (req: Request, res: Response): Promise<void> => {
+  const { coupleId } = req.params;
+
+  if (!coupleId || typeof coupleId !== "string") {
+    res.status(400).json({ message: "Couple ID is required." });
+    return;
+  }
+
+  try {
+    const media = await mediaRepository.findByCoupleId(coupleId);
+    res.status(200).json({ media });
+  } catch (error) {
+    logger.error(`Error fetching all media for couple ${coupleId}: ${error}`);
+    res.status(500).json({ message: "Failed to fetch all media." });
   }
 };

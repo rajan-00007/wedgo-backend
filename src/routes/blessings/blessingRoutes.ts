@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createBlessing } from "../../controllers/blessings/createBlessing";
-import { getAdminBlessings, toggleBlessingPin, getPublicBlessings } from "../../controllers/blessings/blessingsController";
+import { getAdminBlessings, toggleBlessingPin, getPublicBlessings, getAllBlessings } from "../../controllers/blessings/blessingsController";
 import { authenticateToken } from "../../middlewares/auth/authMiddleware";
 import { upload } from "../../middlewares/multer/upload";
 
@@ -12,6 +12,13 @@ const router = Router();
  * @access Public
  */
 router.post("/:coupleId", upload.single("image_url"), createBlessing);
+
+/**
+ * @route GET /api/blessings/all/:coupleId
+ * @desc Get all blessings for a specific couple
+ * @access Public
+ */
+router.get("/all/:coupleId", getAllBlessings);
 
 /** 
  * @route GET /api/blessings/:coupleId

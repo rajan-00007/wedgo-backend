@@ -70,3 +70,4 @@ export class BlessingsRepository {
 }
 
 export default new BlessingsRepository();
+ 
