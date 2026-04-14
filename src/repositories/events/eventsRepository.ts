@@ -93,6 +93,14 @@ export class EventsRepository {
     const result = await pool.query("DELETE FROM events WHERE id = $1", [id]);
     return (result.rowCount ?? 0) > 0;
   }
+
+  async areEventsOwnedByCouple(coupleId: string, eventIds: string[]): Promise<boolean> {
+    const result = await pool.query(
+      "SELECT COUNT(*) FROM events WHERE couple_id = $1 AND id = ANY($2)",
+      [coupleId, eventIds]
+    );
+    return parseInt(result.rows[0].count) === eventIds.length;
+  }
 }
 
 export default new EventsRepository();

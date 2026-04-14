@@ -41,7 +41,7 @@ export class BlessingsRepository {
     );
     return result.rows;
   }
- 
+
   async findById(id: string): Promise<Blessing | null> {
     const result = await pool.query("SELECT * FROM blessings WHERE id = $1", [id]);
     return result.rows[0] || null;
@@ -70,4 +70,3 @@ export class BlessingsRepository {
 }
 
 export default new BlessingsRepository();
- 
