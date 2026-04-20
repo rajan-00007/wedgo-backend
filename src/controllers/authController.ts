@@ -75,7 +75,7 @@ export class AuthController {
       const accessToken = jwt.sign(
         { id: user.id, phoneNumber: user.phone_number },
         ACCESS_TOKEN_SECRET,
-        { expiresIn: "30s" }
+        { expiresIn: "1h" }
       );
 
       const refreshToken = jwt.sign(
@@ -88,22 +88,19 @@ export class AuthController {
       const rtExpiresAt = new Date(Date.now() + 7 * 24 * 3600000);
       await refreshTokenRepository.createRefreshToken(user.id, refreshToken, rtExpiresAt);
 
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 3600000, 
-      });
-
+      // Refresh token: httpOnly cookie, strict, scoped to the refresh endpoint only
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 3600000, 
+        sameSite: "strict",
+        path: "/api/auth/refresh-token",
+        maxAge: 7 * 24 * 3600000,
       });
 
+      // Access token: returned in response body — stored in-memory on the client
       res.status(200).json({
         message: "OTP verified correctly.",
+        accessToken,
         user: {
           id: user.id,
           phoneNumber: user.phone_number,
@@ -150,17 +147,11 @@ export class AuthController {
         const accessToken = jwt.sign(
           { id: user.id, phoneNumber: user.phone_number },
           ACCESS_TOKEN_SECRET,
-          { expiresIn: "30s" }
+          { expiresIn: "1h" }
         );
 
-        res.cookie("accessToken", accessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 3600000,
-        });
-
-        res.status(200).json({ message: "Token refreshed successfully." });
+        // Return new access token in body only — never in a cookie
+        res.status(200).json({ accessToken });
       });
     } catch (error) {
       logger.error("Refresh token error:", error);
@@ -180,8 +171,7 @@ export class AuthController {
       }
     }
 
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    res.clearCookie("refreshToken", { path: "/api/auth/refresh-token" });
 
     res.status(200).json({ message: "Logged out successfully." });
   }
