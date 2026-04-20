@@ -5,6 +5,7 @@ import coupleProfileRepository from "../../repositories/coupleProfileRepository"
 import { createBlessingValidator } from "../../validators/blessings/blessingValidator";
 import { uploadImage } from "../../services/minio/minio.service";
 import { ZodError } from "zod";
+import { getFullMediaUrl } from "../../utils/urlUtils";
 
 export const createBlessing = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -48,6 +49,10 @@ export const createBlessing = async (req: Request, res: Response): Promise<void>
       message,
       image_url: image_url || undefined,
     });
+
+    if (blessing) {
+      blessing.image_url = getFullMediaUrl(blessing.image_url);
+    }
 
     logger.info(`Blessing created: ${blessing.id} for couple: ${profile.id}`);
     res.status(201).json({ message: "Blessing submitted successfully.", blessing });

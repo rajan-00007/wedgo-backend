@@ -9,6 +9,7 @@ export interface CoupleProfile {
   wallpaper_type?: string;
   wallpaper_id?: string;
   custom_wallpaper_urls?: string[];
+  time_block_type?: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -58,16 +59,17 @@ export class CoupleProfileRepository {
     );
   }
 
-  async setCustomWallpaperUrls(userId: string, urls: string[]): Promise<void> {
+  async setCustomWallpaperUrls(userId: string, urls: string[], timeBlockType?: number): Promise<void> {
     await pool.query(
       `UPDATE couple_profiles
        SET 
          custom_wallpaper_urls = $1,
          wallpaper_type = 'custom',
          wallpaper_id = NULL,
+         time_block_type = COALESCE($2, time_block_type),
          updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $2`,
-      [urls, userId]
+       WHERE user_id = $3`,
+      [urls, timeBlockType || null, userId]
     );
   }
 }

@@ -67,6 +67,11 @@ export class BlessingsRepository {
     );
     return result.rows;
   }
+
+  async countByCoupleId(coupleId: string): Promise<number> {
+    const result = await pool.query("SELECT COUNT(*) FROM blessings WHERE couple_id = $1", [coupleId]);
+    return parseInt(result.rows[0].count, 10) || 0;
+  }
 }
 
 export default new BlessingsRepository();

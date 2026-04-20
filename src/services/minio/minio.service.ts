@@ -17,3 +17,18 @@ export async function uploadImage(file: Express.Multer.File, folder: string = "w
 
   return objectName;
 }
+
+export async function uploadBuffer(buffer: Buffer, mimetype: string, folder: string = "qr-codes") {
+  const ext = mimetype.split("/").pop();
+  const objectName = `${folder}/${randomUUID()}.${ext}`;
+
+  await minioClient.putObject(
+    BUCKET,
+    objectName,
+    buffer,
+    buffer.length,
+    { "Content-Type": mimetype }
+  );
+
+  return objectName;
+}

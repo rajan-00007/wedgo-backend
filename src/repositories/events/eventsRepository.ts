@@ -35,7 +35,7 @@ export interface UpdateEventDTO {
   location?: string;
 }
 
-export class EventsRepository {
+class EventsRepository {
   async createEvent(data: CreateEventDTO): Promise<Event> {
     const result = await pool.query(
       `INSERT INTO events (

@@ -3,6 +3,7 @@ import blessingRepositories from "../../repositories/blessings/blessingRepositor
 import coupleProfileRepository from "../../repositories/coupleProfileRepository";
 import logger from "../../utils/logger";
 import { AuthRequest } from "../../middlewares/auth/authMiddleware";
+import { getFullMediaUrl } from "../../utils/urlUtils";
 
 export const getAdminBlessings = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
@@ -21,7 +22,8 @@ export const getAdminBlessings = async (req: AuthRequest, res: Response): Promis
     }
 
     const blessings = await blessingRepositories.findByCoupleId(profile.id);
-    res.status(200).json({ blessings });
+    const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
+    res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
     logger.error(`Error fetching admin blessings: ${error}`);
     res.status(500).json({ message: "Internal server error while fetching blessings" });
@@ -64,6 +66,9 @@ export const toggleBlessingPin = async (req: AuthRequest, res: Response): Promis
     }
 
     const updatedBlessing = await blessingRepositories.updatePinStatus(blessingId, isPinned);
+    if (updatedBlessing) {
+      updatedBlessing.image_url = getFullMediaUrl(updatedBlessing.image_url);
+    }
     res.status(200).json({ 
       message: `Blessing ${isPinned ? 'pinned' : 'unpinned'} successfully`, 
       blessing: updatedBlessing 
@@ -89,7 +94,8 @@ export const getPublicBlessings = async (req: Request, res: Response): Promise<v
   try {
     // Return ONLY pinned blessings for the guest view
     const blessings = await blessingRepositories.findPinnedByCoupleId(coupleId);
-    res.status(200).json({ blessings });
+    const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
+    res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
     logger.error(`Error fetching blessings for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch blessings." });
@@ -111,7 +117,8 @@ export const getAllBlessings = async (req: Request, res: Response): Promise<void
 
   try {
     const blessings = await blessingRepositories.findByCoupleId(coupleId);
-    res.status(200).json({ blessings });
+    const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
+    res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
     logger.error(`Error fetching all blessings for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch all blessings." });

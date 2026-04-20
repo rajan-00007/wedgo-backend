@@ -69,6 +69,8 @@ export class EventsController {
     }
   }
 
+
+
   async getEventById(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
   

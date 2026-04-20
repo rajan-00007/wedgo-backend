@@ -4,6 +4,7 @@ import coupleProfileRepository from "../../repositories/coupleProfileRepository"
 import logger from "../../utils/logger";
 import { uploadImage } from "../../services/minio/minio.service";
 import { AuthRequest } from "../../middlewares/auth/authMiddleware";
+import { getFullMediaUrl } from "../../utils/urlUtils";
 
 /**
  * @desc Upload media for a couple profile (Public)
@@ -42,6 +43,8 @@ export const uploadMedia = async (req: Request, res: Response): Promise<void> =>
         file_type: fileType as "image" | "video",
       });
 
+      media.file_url = getFullMediaUrl(media.file_url) || media.file_url;
+
       mediaResults.push(media);
       logger.info(`${fileType} uploaded: ${media.id} for couple: ${profile.id}`);
     }
@@ -78,7 +81,8 @@ export const getAdminMedia = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const media = await mediaRepository.findByCoupleId(profile.id);
-    res.status(200).json({ media });
+    const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
+    res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
     logger.error(`Error fetching admin media: ${error}`);
     res.status(500).json({ message: "Internal server error while fetching media" });
@@ -118,6 +122,9 @@ export const toggleMediaPin = async (req: AuthRequest, res: Response): Promise<v
     }
 
     const updatedMedia = await mediaRepository.updatePinStatus(mediaId, isPinned);
+    if (updatedMedia) {
+      updatedMedia.file_url = getFullMediaUrl(updatedMedia.file_url) || updatedMedia.file_url;
+    }
     res.status(200).json({
       message: `Media ${isPinned ? 'pinned' : 'unpinned'} successfully`,
       media: updatedMedia
@@ -142,7 +149,8 @@ export const getPublicMedia = async (req: Request, res: Response): Promise<void>
 
   try {
     const media = await mediaRepository.findPinnedByCoupleId(coupleId);
-    res.status(200).json({ media });
+    const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
+    res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
     logger.error(`Error fetching media for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch media." });
@@ -163,7 +171,8 @@ export const getAllMedia = async (req: Request, res: Response): Promise<void> =>
 
   try {
     const media = await mediaRepository.findByCoupleId(coupleId);
-    res.status(200).json({ media });
+    const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
+    res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
     logger.error(`Error fetching all media for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch all media." });

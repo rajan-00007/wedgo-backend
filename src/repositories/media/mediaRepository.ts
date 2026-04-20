@@ -57,6 +57,12 @@ class MediaRepository {
     const { rows } = await pool.query(query, [isPinned, id]);
     return rows[0];
   }
+
+  async countByCoupleId(coupleId: string): Promise<number> {
+    const query = `SELECT COUNT(*) FROM media WHERE couple_id = $1;`;
+    const { rows } = await pool.query(query, [coupleId]);
+    return parseInt(rows[0].count, 10) || 0;
+  }
 }
 
 export default new MediaRepository();

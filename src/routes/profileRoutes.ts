@@ -17,4 +17,10 @@ router.post("/preset-wallpaper", authenticateToken, (req, res) => profileControl
 // Protected route to upload custom wallpaper
 router.post("/custom-wallpaper", authenticateToken, upload.array("wallpapers", 3), (req, res) => profileController.uploadCustomWallpaper(req, res));
 
+// Public route to get profile stats
+router.get("/stats/:coupleId", (req, res) => profileController.getProfileStats(req, res));
+
+// Public route to get hero page data (wallpapers & time block)
+router.get("/hero/:coupleId", (req, res) => profileController.getHeroPageData(req, res));
+
 export default router;

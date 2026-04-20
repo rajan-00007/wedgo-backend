@@ -5,10 +5,12 @@ import { AuthRequest } from "../../middlewares/auth/authMiddleware";
 import eventAccessRepository from "../../repositories/event-access/eventAccessRepository";
 import eventsRepository from "../../repositories/events/eventsRepository";
 import coupleProfileRepository from "../../repositories/coupleProfileRepository";
+import { uploadBuffer } from "../../services/minio/minio.service";
+import { getFullMediaUrl } from "../../utils/urlUtils";
 
 export const generateFullAccess = async (req: AuthRequest, res: Response) => {
   try {
-    const { coupleId } = req.body;
+    const { coupleId } = req.query as { coupleId?: string };
 
     if (!coupleId) {
       return res.status(400).json({ error: "coupleId is required" });
@@ -28,22 +30,42 @@ export const generateFullAccess = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: "Forbidden: You do not own this profile" });
     }
 
+    // Check if 'all' access already exists for this couple
+    const existingAccess = await eventAccessRepository.findByCoupleAndType(coupleId, "all");
+    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    if (existingAccess) {
+      const url = `${frontendBaseUrl}/event?token=${existingAccess.token}`;
+      let qrCode = existingAccess.qr_image_url ? getFullMediaUrl(existingAccess.qr_image_url) : null;
+      
+      if (!qrCode) {
+        qrCode = await QRCode.toDataURL(url);
+      }
+
+      return res.status(200).json({
+        url,
+        qrCode,
+        message: "Existing access retrieved"
+      });
+    }
+
     const token = crypto.randomBytes(32).toString("hex");
+    const url = `${frontendBaseUrl}/event?token=${token}`;
+    
+    const qrBuffer = await QRCode.toBuffer(url, { type: 'png' });
+    const qrObjectName = await uploadBuffer(qrBuffer, 'image/png', 'qr-codes');
 
     await eventAccessRepository.createAccess({
       couple_id: coupleId,
       token,
       access_type: "all",
+      qr_image_url: qrObjectName,
     });
-
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const url = `${frontendBaseUrl}/event?token=${token}`;
-
-    const qrCode = await QRCode.toDataURL(url);
 
     return res.status(201).json({
       url,
-      qrCode,
+      qrCode: getFullMediaUrl(qrObjectName),
+      message: "New access generated"
     });
   } catch (error) {
     console.error("Error generating full access:", error);
@@ -80,24 +102,26 @@ export const generateCustomAccess = async (req: AuthRequest, res: Response) => {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
+    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const url = `${frontendBaseUrl}/event?token=${token}`;
+
+    const qrBuffer = await QRCode.toBuffer(url, { type: 'png' });
+    const qrObjectName = await uploadBuffer(qrBuffer, 'image/png', 'qr-codes');
 
     const access = await eventAccessRepository.createAccess({
       couple_id: coupleId,
       token,
       access_type: "custom",
+      qr_image_url: qrObjectName,
     });
 
     // Insert mappings
     await eventAccessRepository.addEventsToAccess(access.id, eventIds);
 
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const url = `${frontendBaseUrl}/event?token=${token}`;
-
-    const qrCode = await QRCode.toDataURL(url);
 
     return res.status(201).json({
       url,
-      qrCode,
+      qrCode: getFullMediaUrl(qrObjectName),
     });
   } catch (error) {
     console.error("Error generating custom access:", error);
@@ -137,6 +161,44 @@ export const getEventsByToken = async (req: Request, res: Response) => {
     return res.status(403).json({ error: "Access type not supported" });
   } catch (error) {
     console.error("Error fetching events by token:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getWelcomeDataByToken = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ error: "token is required" });
+    }
+
+    const access = await eventAccessRepository.findByToken(token);
+
+    if (!access) {
+      return res.status(403).json({ error: "Invalid token" });
+    }
+
+    if (access.expires_at && new Date(access.expires_at) < new Date()) {
+      return res.status(403).json({ error: "Token expired" });
+    }
+
+    const profile = await coupleProfileRepository.findById(access.couple_id);
+
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    return res.status(200).json({
+      couple_id: access.couple_id,
+      partner1_name: profile.partner1_name,
+      partner2_name: profile.partner2_name,
+      event_date: profile.event_date,
+      custom_wallpaper_urls: profile.custom_wallpaper_urls?.map((url: string) => getFullMediaUrl(url)) || [],
+      time_block_type: profile.time_block_type || null
+    });
+  } catch (error) {
+    console.error("Error fetching welcome data by token:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

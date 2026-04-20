@@ -7,6 +7,7 @@ export interface EventAccess {
   access_type: 'all' | 'custom';
   expires_at?: Date;
   created_at: Date;
+  qr_image_url?: string;
 }
 
 export class EventAccessRepository {
@@ -15,12 +16,13 @@ export class EventAccessRepository {
     token: string;
     access_type: 'all' | 'custom';
     expires_at?: Date;
+    qr_image_url?: string;
   }): Promise<EventAccess> {
     const result = await pool.query(
-      `INSERT INTO event_access (couple_id, token, access_type, expires_at)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO event_access (couple_id, token, access_type, expires_at, qr_image_url)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [data.couple_id, data.token, data.access_type, data.expires_at || null]
+      [data.couple_id, data.token, data.access_type, data.expires_at || null, data.qr_image_url || null]
     );
     return result.rows[0];
   }
@@ -29,6 +31,14 @@ export class EventAccessRepository {
     const result = await pool.query(
       "SELECT * FROM event_access WHERE token = $1",
       [token]
+    );
+    return result.rows[0] || null;
+  }
+
+  async findByCoupleAndType(coupleId: string, accessType: 'all' | 'custom'): Promise<EventAccess | null> {
+    const result = await pool.query(
+      "SELECT * FROM event_access WHERE couple_id = $1 AND access_type = $2",
+      [coupleId, accessType]
     );
     return result.rows[0] || null;
   }

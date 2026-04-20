@@ -75,7 +75,7 @@ export class AuthController {
       const accessToken = jwt.sign(
         { id: user.id, phoneNumber: user.phone_number },
         ACCESS_TOKEN_SECRET,
-        { expiresIn: "9h" }
+        { expiresIn: "30s" }
       );
 
       const refreshToken = jwt.sign(
@@ -150,7 +150,7 @@ export class AuthController {
         const accessToken = jwt.sign(
           { id: user.id, phoneNumber: user.phone_number },
           ACCESS_TOKEN_SECRET,
-          { expiresIn: "1h" }
+          { expiresIn: "30s" }
         );
 
         res.cookie("accessToken", accessToken, {
@@ -166,6 +166,24 @@ export class AuthController {
       logger.error("Refresh token error:", error);
       res.status(500).json({ message: "Failed to refresh token." });
     }
+  }
+
+  // 4. Logout
+  async logout(req: Request, res: Response): Promise<void> {
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+    if (refreshToken) {
+      try {
+        await refreshTokenRepository.revokeToken(refreshToken);
+      } catch (error) {
+        logger.error("Logout error (revoking token):", error);
+      }
+    }
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    res.status(200).json({ message: "Logged out successfully." });
   }
 }
 

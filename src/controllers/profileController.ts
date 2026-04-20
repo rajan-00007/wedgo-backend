@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import coupleProfileRepository from "../repositories/coupleProfileRepository";
+import mediaRepository from "../repositories/media/mediaRepository";
+import blessingRepositories from "../repositories/blessings/blessingRepositories";
+import eventEntriesRepository from "../repositories/events/eventEntriesRepository";
 import { uploadImage } from "../services/minio/minio.service";
+import { getFullMediaUrl } from "../utils/urlUtils";
 
 export class ProfileController {
   async upsertProfile(req: Request, res: Response): Promise<void> {
@@ -68,6 +72,7 @@ export class ProfileController {
   async uploadCustomWallpaper(req: Request, res: Response): Promise<void> {
     const userId = (req as any).user.id;
     const files = req.files as Express.Multer.File[];
+    const { time_block_type } = req.body;
 
     if (!files || files.length === 0) {
       res.status(400).json({ message: "No image files uploaded." });
@@ -80,15 +85,72 @@ export class ProfileController {
       const objectNames = await Promise.all(uploadPromises);
 
       // 2. Update DB with the array of object paths
-      await coupleProfileRepository.setCustomWallpaperUrls(userId, objectNames);
+      const parsedTimeBlockType = time_block_type ? parseInt(time_block_type as string) : undefined;
+      await coupleProfileRepository.setCustomWallpaperUrls(userId, objectNames, parsedTimeBlockType);
 
       res.status(200).json({
         message: "Custom wallpapers uploaded successfully.",
-        urls: objectNames
+        urls: objectNames.map(url => getFullMediaUrl(url))
       });
     } catch (error) {
       console.error("Error uploading custom wallpapers:", error);
       res.status(500).json({ message: "Failed to upload custom wallpapers." });
+    }
+  }
+
+  async getProfileStats(req: Request, res: Response): Promise<void> {
+    const { coupleId } = req.params;
+
+    if (!coupleId) {
+      res.status(400).json({ message: "coupleId is required." });
+      return;
+    }
+
+    try {
+      const coupleIdStr = coupleId as string;
+      const [totalMedia, totalBlessings, totalEntries] = await Promise.all([
+        mediaRepository.countByCoupleId(coupleIdStr),
+        blessingRepositories.countByCoupleId(coupleIdStr),
+        eventEntriesRepository.getCountByCouple(coupleIdStr)
+      ]);
+
+      res.status(200).json({
+        totalMedia,
+        totalBlessings,
+        totalEntries
+      });
+    } catch (error) {
+      console.error("Error getting profile stats:", error);
+      res.status(500).json({ message: "Failed to get profile statistics." });
+    }
+  }
+
+  async getHeroPageData(req: Request, res: Response): Promise<void> {
+    const { coupleId } = req.params;
+
+    if (!coupleId) {
+      res.status(400).json({ message: "coupleId is required." });
+      return;
+    }
+
+    try {
+      const profile = await coupleProfileRepository.findById(coupleId as string);
+
+      if (!profile) {
+        res.status(404).json({ message: "Profile not found." });
+        return;
+      }
+
+      res.status(200).json({
+        partner1_name: profile.partner1_name,
+        partner2_name: profile.partner2_name,
+        event_date: profile.event_date,
+        custom_wallpaper_urls: profile.custom_wallpaper_urls?.map((url: string) => getFullMediaUrl(url)) || [],
+        time_block_type: profile.time_block_type || null
+      });
+    } catch (error) {
+      console.error("Error getting hero page data:", error);
+      res.status(500).json({ message: "Failed to get hero page data." });
     }
   }
 }
