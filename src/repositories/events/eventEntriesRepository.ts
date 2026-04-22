@@ -25,14 +25,14 @@ export class EventEntriesRepository {
       "SELECT COUNT(*) FROM event_entries WHERE couple_id = $1",
       [coupleId]
     );
-    return parseInt(result.rows[0].count);
+    return parseInt(result.rows[0].count, 10) || 0;
   }
 
   async getUniqueUsersCountAcrossAllCouples(): Promise<number> {
     const result = await pool.query(
       "SELECT COUNT(DISTINCT user_device_id) FROM event_entries"
     );
-    return parseInt(result.rows[0].count);
+    return parseInt(result.rows[0].count, 10) || 0;
   }
 
   async getCountsGroupedByCouple(): Promise<{ couple_id: string; count: number }[]> {
@@ -41,7 +41,7 @@ export class EventEntriesRepository {
     );
     return result.rows.map(row => ({
       couple_id: row.couple_id,
-      count: parseInt(row.count)
+      count: parseInt(row.count, 10) || 0
     }));
   }
 }

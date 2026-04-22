@@ -301,6 +301,34 @@ describe("Blessings API", () => {
           .send({ isPinned: true });
         expect(response.status).toBe(500);
     });
+
+    it("toggleBlessingPin: updatedBlessing is null (Line 70 branch)", async () => {
+        (blessingRepositories.findById as jest.Mock).mockResolvedValue({ couple_id: "c1" });
+        (coupleProfileRepository.findByUserId as jest.Mock).mockResolvedValue({ id: "c1", user_id: mockUser.id });
+        (blessingRepositories.updatePinStatus as jest.Mock).mockResolvedValue(null);
+
+        const response = await request(app)
+          .patch("/api/blessings/admin/pin/b1")
+          .set("Authorization", `Bearer ${mockToken}`)
+          .send({ isPinned: true });
+
+        expect(response.status).toBe(200);
+        expect(response.body.blessing).toBeNull();
+    });
+
+    it("should successfully unpin a blessing (Line 74 'unpinned' branch)", async () => {
+        (blessingRepositories.findById as jest.Mock).mockResolvedValue({ couple_id: "c1" });
+        (coupleProfileRepository.findByUserId as jest.Mock).mockResolvedValue({ id: "c1", user_id: mockUser.id });
+        (blessingRepositories.updatePinStatus as jest.Mock).mockResolvedValue({ id: "b1", is_pinned: false });
+
+        const response = await request(app)
+          .patch("/api/blessings/admin/pin/b1")
+          .set("Authorization", `Bearer ${mockToken}`)
+          .send({ isPinned: false });
+
+        expect(response.status).toBe(200);
+        expect(response.body.message).toContain("unpinned");
+    });
   });
 
   describe("Direct Controller Calls (Coverage)", () => {

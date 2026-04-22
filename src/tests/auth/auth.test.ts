@@ -233,4 +233,24 @@ describe("Auth Controller", () => {
         expect(response.status).toBe(200);
       });
   });
+
+  describe("Secret Fallbacks (Lines 11-12)", () => {
+    it("should use fallback secrets if environment variables are missing", () => {
+        const originalAccessTokenSecret = process.env.ACCESS_TOKEN_SECRET;
+        const originalRefreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
+        
+        delete process.env.ACCESS_TOKEN_SECRET;
+        delete process.env.REFRESH_TOKEN_SECRET;
+        
+        jest.resetModules();
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const authController = require("../../controllers/authController").default;
+        
+        expect(authController).toBeDefined();
+        
+        // Restore
+        process.env.ACCESS_TOKEN_SECRET = originalAccessTokenSecret;
+        process.env.REFRESH_TOKEN_SECRET = originalRefreshTokenSecret;
+    });
+  });
 });

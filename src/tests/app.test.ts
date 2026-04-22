@@ -72,9 +72,24 @@ describe('App Heat Check', () => {
     });
 
     it('should handle error with empty message (Line 82 fallback)', async () => {
-        // We can use a trick to pass a middleware that throws before CORS or similar, 
-        // but testing the fallback 'Something went wrong!' is harder without a route.
-        // However, we already hit line 82 with the CORS error message.
+        // Mock a route that exists (health check) or use a simpler approach
+        // We'll use a route that was already defined in app.ts to ensure it's before the error handler
+        const res = await request(app).get('/api/auth/non-existent');
+        // A 404 is not an error in Express unless next(err) is called.
+        // So we'll trigger a real error by mocking a controller.
+        
+        // Re-using the logic but ensuring it hits the handler:
+        const authController = require('../controllers/authController').default;
+        const spy = jest.spyOn(authController, 'sendOTP').mockImplementation(() => {
+            const err = new Error();
+            err.message = '';
+            throw err;
+        });
+
+        const response = await request(app).post('/api/auth/send-otp').send({ phoneNumber: '123' });
+        expect(response.status).toBe(500);
+        expect(response.body.message).toBe('Something went wrong!');
+        spy.mockRestore();
     });
   });
 });

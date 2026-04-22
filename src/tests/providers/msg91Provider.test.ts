@@ -51,6 +51,28 @@ describe("MSG91 Provider", () => {
     );
   });
 
+  it("should use OTP from data object if provided (Line 8 branch)", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { type: "success" }, status: 200 });
+    
+    await msg91Provider.send(phone, "Message with no digits", { otp: "998877" });
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ otp: "998877" }),
+        expect.any(Object)
+    );
+  });
+
+  it("should use empty string if no OTP found (Line 8 branch fallback)", async () => {
+    mockedAxios.post.mockResolvedValueOnce({ data: { type: "success" }, status: 200 });
+    
+    await msg91Provider.send(phone, "Message with no digits");
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ otp: "" }),
+        expect.any(Object)
+    );
+  });
+
   it("should retry and succeed if first attempt throws exception (Line 46-58)", async () => {
     mockedAxios.post
       .mockRejectedValueOnce(new Error("Network Error"))

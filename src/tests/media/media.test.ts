@@ -241,6 +241,20 @@ describe("Media Controller Tests", () => {
 
       expect(response.status).toBe(500);
     });
+
+    it("toggleMediaPin: updatedMedia is null (Line 126 branch)", async () => {
+        (mediaRepository.findById as jest.Mock).mockResolvedValue({ id: "media-1", couple_id: "couple-123" });
+        (coupleProfileRepository.findByUserId as jest.Mock).mockResolvedValue({ id: "couple-123" });
+        (mediaRepository.updatePinStatus as jest.Mock).mockResolvedValue(null);
+
+        const response = await request(app)
+          .patch("/api/media/admin/pin/media-1")
+          .set("Authorization", `Bearer ${mockToken}`)
+          .send({ isPinned: true });
+
+        expect(response.status).toBe(200);
+        expect(response.body.media).toBeNull();
+    });
   });
 
   describe("GET /api/media/:coupleId", () => {

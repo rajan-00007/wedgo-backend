@@ -322,4 +322,43 @@ describe("Event Access Controller", () => {
         expect(response.status).toBe(500);
     });
   });
+
+  describe("FRONTEND_URL Fallbacks (Lines 35, 105)", () => {
+    it("should use localhost if FRONTEND_URL is missing in generateFullAccess", async () => {
+        const originalUrl = process.env.FRONTEND_URL;
+        delete process.env.FRONTEND_URL;
+        
+        (coupleProfileRepository.findById as jest.Mock).mockResolvedValue({ user_id: "user-123" });
+        (eventAccessRepository.findByCoupleAndType as jest.Mock).mockResolvedValue(null);
+        (minioService.uploadBuffer as jest.Mock).mockResolvedValue("qr.png");
+
+        const response = await request(app)
+          .get("/api/generate-full-access")
+          .query({ coupleId: "c1" })
+          .set("Authorization", `Bearer ${mockToken}`);
+
+        expect(response.body.url).toContain("http://localhost:3000");
+        
+        process.env.FRONTEND_URL = originalUrl;
+    });
+
+    it("should use localhost if FRONTEND_URL is missing in generateCustomAccess", async () => {
+        const originalUrl = process.env.FRONTEND_URL;
+        delete process.env.FRONTEND_URL;
+        
+        (coupleProfileRepository.findById as jest.Mock).mockResolvedValue({ user_id: "user-123" });
+        (eventsRepository.areEventsOwnedByCouple as jest.Mock).mockResolvedValue(true);
+        (minioService.uploadBuffer as jest.Mock).mockResolvedValue("qr.png");
+        (eventAccessRepository.createAccess as jest.Mock).mockResolvedValue({ id: "acc-1" });
+
+        const response = await request(app)
+          .post("/api/generate-custom-access")
+          .set("Authorization", `Bearer ${mockToken}`)
+          .send({ coupleId: "c1", eventIds: ["e1"] });
+
+        expect(response.body.url).toContain("http://localhost:3000");
+        
+        process.env.FRONTEND_URL = originalUrl;
+    });
+  });
 });

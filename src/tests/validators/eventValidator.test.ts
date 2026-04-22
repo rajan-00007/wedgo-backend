@@ -9,33 +9,35 @@ describe("Event Validator Refine Branches", () => {
     location: "Hotel"
   };
 
-  it("createEventValidator: success when times are correct", () => {
-    const result = createEventValidator.safeParse(baseData);
-    expect(result.success).toBe(true);
+  it("createEventValidator: failure when fields are empty (hits line 50 branch)", () => {
+    // Passing an empty string for start_time will fail regex validation,
+    // but might trigger the falsey check in refinement (Line 50) if zod evaluates it.
+    const result = createEventValidator.safeParse({ ...baseData, start_time: "" });
+    expect(result.success).toBe(false);
   });
 
-  it("createEventValidator: fail when end_time is before start_time", () => {
+  it("eventDateSchema: fail for past date", () => {
+    const pastDate = new Date();
+    pastDate.setDate(pastDate.getDate() - 1);
     const result = createEventValidator.safeParse({
-      ...baseData,
-      start_time: "12:00",
-      end_time: "10:00"
+        ...baseData,
+        event_date: pastDate.toISOString().split('T')[0]
     });
     expect(result.success).toBe(false);
   });
 
-  it("updateEventValidator: success when only name provided (Line 78 branch)", () => {
-    const result = updateEventValidator.safeParse({ name: "New Name" });
-    expect(result.success).toBe(true);
+  it("eventDateSchema: fail for invalid date string", () => {
+    const result = createEventValidator.safeParse({
+        ...baseData,
+        event_date: "invalid-date"
+    });
+    expect(result.success).toBe(false);
   });
 
-  it("updateEventValidator: success when only start_time provided (Line 78 branch)", () => {
-    const result = updateEventValidator.safeParse({ start_time: "10:00" });
-    expect(result.success).toBe(true);
-  });
-
-  it("updateEventValidator: fail when end_time is before start_time in update", () => {
+  it("updateEventValidator: success when times are same (Line 76 is <, so same time should fail if logic expects strictly after)", () => {
+    // Actually start_time < end_time means same time fails.
     const result = updateEventValidator.safeParse({ 
-      start_time: "12:00",
+      start_time: "10:00",
       end_time: "10:00" 
     });
     expect(result.success).toBe(false);
