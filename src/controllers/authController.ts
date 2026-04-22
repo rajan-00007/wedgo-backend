@@ -88,12 +88,13 @@ export class AuthController {
       const rtExpiresAt = new Date(Date.now() + 7 * 24 * 3600000);
       await refreshTokenRepository.createRefreshToken(user.id, refreshToken, rtExpiresAt);
 
-      // Refresh token: httpOnly cookie, strict, scoped to the refresh endpoint only
+      // Refresh token: httpOnly cookie, strict, scoped to /api/auth so both
+      // /refresh-token and /logout endpoints can access it.
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        path: "/api/auth/refresh-token",
+        path: "/api/auth",
         maxAge: 7 * 24 * 3600000,
       });
 
@@ -171,7 +172,7 @@ export class AuthController {
       }
     }
 
-    res.clearCookie("refreshToken", { path: "/api/auth/refresh-token" });
+    res.clearCookie("refreshToken", { path: "/api/auth" });
 
     res.status(200).json({ message: "Logged out successfully." });
   }

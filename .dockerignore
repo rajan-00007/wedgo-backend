@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+npm-debug.log
+docker-compose.yml
+Dockerfile
+.dockerignore
+coverage
+test_output.txt
+setup.sql
