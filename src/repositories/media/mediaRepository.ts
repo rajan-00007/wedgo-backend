@@ -21,26 +21,6 @@ class MediaRepository {
     return rows[0];
   }
 
-  async findByCoupleId(coupleId: string): Promise<Media[]> {
-    const query = `
-      SELECT * FROM media
-      WHERE couple_id = $1
-      ORDER BY created_at DESC;
-    `;
-    const { rows } = await pool.query(query, [coupleId]);
-    return rows;
-  }
-
-  async findPinnedByCoupleId(coupleId: string): Promise<Media[]> {
-    const query = `
-      SELECT * FROM media
-      WHERE couple_id = $1 AND is_pinned = TRUE
-      ORDER BY created_at DESC;
-    `;
-    const { rows } = await pool.query(query, [coupleId]);
-    return rows;
-  }
-
   async findById(id: string): Promise<Media | null> {
     const query = `SELECT * FROM media WHERE id = $1;`;
     const { rows } = await pool.query(query, [id]);
@@ -62,6 +42,41 @@ class MediaRepository {
     const query = `SELECT COUNT(*) FROM media WHERE couple_id = $1;`;
     const { rows } = await pool.query(query, [coupleId]);
     return parseInt(rows[0].count, 10) || 0;
+  }
+
+  async likeMedia(mediaId: string, deviceId: string): Promise<void> {
+    const query = `
+      INSERT INTO media_likes (media_id, user_device_id)
+      VALUES ($1, $2)
+      ON CONFLICT (media_id, user_device_id) DO NOTHING;
+    `;
+    await pool.query(query, [mediaId, deviceId]);
+  }
+
+  async findByCoupleId(coupleId: string, deviceId?: string): Promise<any[]> {
+    const query = `
+      SELECT m.*, 
+             (SELECT COUNT(*) FROM media_likes WHERE media_id = m.id) as likes_count,
+             EXISTS (SELECT 1 FROM media_likes WHERE media_id = m.id AND user_device_id = $2) as liked
+      FROM media m
+      WHERE m.couple_id = $1
+      ORDER BY m.created_at DESC;
+    `;
+    const { rows } = await pool.query(query, [coupleId, deviceId || ""]);
+    return rows;
+  }
+
+  async findPinnedByCoupleId(coupleId: string, deviceId?: string): Promise<any[]> {
+    const query = `
+      SELECT m.*, 
+             (SELECT COUNT(*) FROM media_likes WHERE media_id = m.id) as likes_count,
+             EXISTS (SELECT 1 FROM media_likes WHERE media_id = m.id AND user_device_id = $2) as liked
+      FROM media m
+      WHERE m.couple_id = $1 AND m.is_pinned = TRUE
+      ORDER BY m.created_at DESC;
+    `;
+    const { rows } = await pool.query(query, [coupleId, deviceId || ""]);
+    return rows;
   }
 }
 

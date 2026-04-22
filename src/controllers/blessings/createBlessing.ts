@@ -52,9 +52,9 @@ export const createBlessing = async (req: Request, res: Response): Promise<void>
 
     if (blessing) {
       blessing.image_url = getFullMediaUrl(blessing.image_url);
+      logger.info(`Blessing created: ${blessing.id} for couple: ${profile.id}`);
     }
 
-    logger.info(`Blessing created: ${blessing.id} for couple: ${profile.id}`);
     res.status(201).json({ message: "Blessing submitted successfully.", blessing });
   } catch (error) {
     logger.error(`Error creating blessing: ${error}`);

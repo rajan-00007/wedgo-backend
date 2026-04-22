@@ -18,7 +18,8 @@ jest.mock("../../repositories/media/mediaRepository", () => {
       findByCoupleId: jest.fn(),
       findPinnedByCoupleId: jest.fn(),
       findById: jest.fn(),
-      updatePinStatus: jest.fn()
+      updatePinStatus: jest.fn(),
+      likeMedia: jest.fn()
     }
   };
 });
@@ -64,6 +65,19 @@ describe("Media Controller Tests", () => {
       expect(mediaRepository.createMedia).toHaveBeenCalledWith(expect.objectContaining({
         file_type: "video"
       }));
+    });
+
+    it("should handle empty file_url (Line 46 branch)", async () => {
+        (coupleProfileRepository.findById as jest.Mock).mockResolvedValue({ id: "couple-123" });
+        (uploadImage as jest.Mock).mockResolvedValue("");
+        (mediaRepository.createMedia as jest.Mock).mockResolvedValue({ id: "media-123", file_url: "" });
+  
+        const response = await request(app)
+          .post("/api/media/couple-123")
+          .attach("files", Buffer.from("dummy"), "test.jpg");
+  
+        expect(response.status).toBe(201);
+        expect(response.body.media[0].file_url).toBe("");
     });
 
     it("should return 400 if no files uploaded", async () => {
@@ -155,6 +169,20 @@ describe("Media Controller Tests", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.message).toBe("Media pinned successfully");
+    });
+
+    it("should handle empty file_url in toggle (Line 127 branch)", async () => {
+        (mediaRepository.findById as jest.Mock).mockResolvedValue({ id: "media-1", couple_id: "couple-123" });
+        (coupleProfileRepository.findByUserId as jest.Mock).mockResolvedValue({ id: "couple-123" });
+        (mediaRepository.updatePinStatus as jest.Mock).mockResolvedValue({ id: "media-1", is_pinned: true, file_url: "" });
+  
+        const response = await request(app)
+          .patch("/api/media/admin/pin/media-1")
+          .set("Authorization", `Bearer ${mockToken}`)
+          .send({ isPinned: true });
+  
+        expect(response.status).toBe(200);
+        expect(response.body.media.file_url).toBe("");
     });
 
     it("should unpin media successfully", async () => {
@@ -257,8 +285,40 @@ describe("Media Controller Tests", () => {
     });
   });
 
+  describe("POST /api/media/like/:mediaId", () => {
+    it("should like media successfully", async () => {
+      (mediaRepository.likeMedia as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .post("/api/media/like/media-1")
+        .set("x-device-id", "device-1");
+
+      expect(response.status).toBe(200);
+      expect(response.body.message).toBe("Media liked successfully.");
+    });
+
+    it("should return 400 if device-id header is missing", async () => {
+      const response = await request(app)
+        .post("/api/media/like/media-1");
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe("Device ID header (x-device-id) is required.");
+    });
+
+    it("should return 500 if error occurs (Line 206-208)", async () => {
+      (mediaRepository.likeMedia as jest.Mock).mockRejectedValue(new Error("DB Error"));
+
+      const response = await request(app)
+        .post("/api/media/like/media-1")
+        .set("x-device-id", "device-1");
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe("Failed to like media.");
+    });
+  });
+
   describe("Direct Controller Calls (Coverage)", () => {
-    const { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia, getAllMedia } = require("../../controllers/media/mediaController");
+    const { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia, getAllMedia, likeMedia } = require("../../controllers/media/mediaController");
 
     let mockReq: any;
     let mockRes: any;
@@ -267,7 +327,8 @@ describe("Media Controller Tests", () => {
       mockReq = {
         params: {},
         body: {},
-        user: {}
+        user: {},
+        headers: {}
       };
       mockRes = {
         status: jest.fn().mockReturnThis(),
@@ -310,6 +371,12 @@ describe("Media Controller Tests", () => {
       expect(mockRes.status).toHaveBeenCalledWith(400);
       expect(mockRes.json).toHaveBeenCalledWith({ message: "Couple ID is required." });
     });
+
+    it("likeMedia: missing mediaId (Line 193-196)", async () => {
+        mockReq.params.mediaId = undefined;
+        await likeMedia(mockReq, mockRes);
+        expect(mockRes.status).toHaveBeenCalledWith(400);
+    });
   });
 
   describe("MediaRepository Tests", () => {
@@ -323,14 +390,14 @@ describe("Media Controller Tests", () => {
 
     it("findByCoupleId should execute correct query", async () => {
       (pool.query as jest.Mock).mockResolvedValue({ rows: [] });
-      await realMediaRepository.findByCoupleId("c1");
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("SELECT * FROM media"), ["c1"]);
+      await realMediaRepository.findByCoupleId("c1", "d1");
+      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("SELECT m.*"), ["c1", "d1"]);
     });
 
     it("findPinnedByCoupleId should execute correct query", async () => {
       (pool.query as jest.Mock).mockResolvedValue({ rows: [] });
-      await realMediaRepository.findPinnedByCoupleId("c1");
-      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("is_pinned = TRUE"), ["c1"]);
+      await realMediaRepository.findPinnedByCoupleId("c1", "d1");
+      expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("is_pinned = TRUE"), ["c1", "d1"]);
     });
 
     it("findById should return media if found", async () => {
@@ -350,6 +417,11 @@ describe("Media Controller Tests", () => {
       await realMediaRepository.updatePinStatus("m1", true);
       expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("UPDATE media"), [true, "m1"]);
     });
+
+    it("likeMedia should execute correct query", async () => {
+        (pool.query as jest.Mock).mockResolvedValue({ rows: [] });
+        await realMediaRepository.likeMedia("m1", "d1");
+        expect(pool.query).toHaveBeenCalledWith(expect.stringContaining("INSERT INTO media_likes"), ["m1", "d1"]);
+    });
   });
 });
-

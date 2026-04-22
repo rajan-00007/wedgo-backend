@@ -67,6 +67,7 @@ export const uploadMedia = async (req: Request, res: Response): Promise<void> =>
  */
 export const getAdminMedia = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
+  const deviceId = req.headers['x-device-id'] as string;
 
   if (!userId) {
     res.status(401).json({ message: "Unauthorized: No user ID found" });
@@ -80,7 +81,7 @@ export const getAdminMedia = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    const media = await mediaRepository.findByCoupleId(profile.id);
+    const media = await mediaRepository.findByCoupleId(profile.id, deviceId);
     const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
     res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
@@ -141,6 +142,7 @@ export const toggleMediaPin = async (req: AuthRequest, res: Response): Promise<v
  */
 export const getPublicMedia = async (req: Request, res: Response): Promise<void> => {
   const { coupleId } = req.params;
+  const deviceId = req.headers['x-device-id'] as string;
 
   if (!coupleId || typeof coupleId !== "string") {
     res.status(400).json({ message: "Couple ID is required." });
@@ -148,7 +150,7 @@ export const getPublicMedia = async (req: Request, res: Response): Promise<void>
   }
 
   try {
-    const media = await mediaRepository.findPinnedByCoupleId(coupleId);
+    const media = await mediaRepository.findPinnedByCoupleId(coupleId, deviceId);
     const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
     res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
@@ -163,6 +165,7 @@ export const getPublicMedia = async (req: Request, res: Response): Promise<void>
  */
 export const getAllMedia = async (req: Request, res: Response): Promise<void> => {
   const { coupleId } = req.params;
+  const deviceId = req.headers['x-device-id'] as string;
 
   if (!coupleId || typeof coupleId !== "string") {
     res.status(400).json({ message: "Couple ID is required." });
@@ -170,11 +173,38 @@ export const getAllMedia = async (req: Request, res: Response): Promise<void> =>
   }
 
   try {
-    const media = await mediaRepository.findByCoupleId(coupleId);
+    const media = await mediaRepository.findByCoupleId(coupleId, deviceId);
     const mediaWithUrls = media.map(m => ({ ...m, file_url: getFullMediaUrl(m.file_url) }));
     res.status(200).json({ media: mediaWithUrls });
   } catch (error) {
     logger.error(`Error fetching all media for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch all media." });
+  }
+};
+
+/**
+ * @desc Like a media (Public)
+ * @route POST /api/media/like/:mediaId
+ */
+export const likeMedia = async (req: Request, res: Response): Promise<void> => {
+  const mediaId = req.params.mediaId as string;
+  const deviceId = req.headers['x-device-id'] as string;
+
+  if (!mediaId) {
+    res.status(400).json({ message: "Media ID is required." });
+    return;
+  }
+
+  if (!deviceId) {
+    res.status(400).json({ message: "Device ID header (x-device-id) is required." });
+    return;
+  }
+
+  try {
+    await mediaRepository.likeMedia(mediaId, deviceId);
+    res.status(200).json({ message: "Media liked successfully." });
+  } catch (error) {
+    logger.error(`Error liking media ${mediaId}: ${error}`);
+    res.status(500).json({ message: "Failed to like media." });
   }
 };

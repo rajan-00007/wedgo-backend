@@ -7,6 +7,7 @@ import { getFullMediaUrl } from "../../utils/urlUtils";
 
 export const getAdminBlessings = async (req: AuthRequest, res: Response): Promise<void> => {
   const userId = req.user?.id;
+  const deviceId = req.headers['x-device-id'] as string;
   
   if (!userId) {
     res.status(401).json({ message: "Unauthorized: No user ID found in token" });
@@ -21,7 +22,7 @@ export const getAdminBlessings = async (req: AuthRequest, res: Response): Promis
       return;
     }
 
-    const blessings = await blessingRepositories.findByCoupleId(profile.id);
+    const blessings = await blessingRepositories.findByCoupleId(profile.id, deviceId);
     const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
     res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
@@ -85,6 +86,7 @@ export const toggleBlessingPin = async (req: AuthRequest, res: Response): Promis
  */
 export const getPublicBlessings = async (req: Request, res: Response): Promise<void> => {
   const { coupleId } = req.params;
+  const deviceId = req.headers['x-device-id'] as string;
 
   if (!coupleId || typeof coupleId !== "string") {
     res.status(400).json({ message: "Couple ID is required." });
@@ -93,7 +95,7 @@ export const getPublicBlessings = async (req: Request, res: Response): Promise<v
 
   try {
     // Return ONLY pinned blessings for the guest view
-    const blessings = await blessingRepositories.findPinnedByCoupleId(coupleId);
+    const blessings = await blessingRepositories.findPinnedByCoupleId(coupleId, deviceId);
     const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
     res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
@@ -109,6 +111,7 @@ export const getPublicBlessings = async (req: Request, res: Response): Promise<v
  */
 export const getAllBlessings = async (req: Request, res: Response): Promise<void> => {
   const { coupleId } = req.params;
+  const deviceId = req.headers['x-device-id'] as string;
 
   if (!coupleId || typeof coupleId !== "string") {
     res.status(400).json({ message: "Couple ID is required." });
@@ -116,11 +119,38 @@ export const getAllBlessings = async (req: Request, res: Response): Promise<void
   }
 
   try {
-    const blessings = await blessingRepositories.findByCoupleId(coupleId);
+    const blessings = await blessingRepositories.findByCoupleId(coupleId, deviceId);
     const blessingsWithUrls = blessings.map(b => ({ ...b, image_url: getFullMediaUrl(b.image_url) }));
     res.status(200).json({ blessings: blessingsWithUrls });
   } catch (error) {
     logger.error(`Error fetching all blessings for couple ${coupleId}: ${error}`);
     res.status(500).json({ message: "Failed to fetch all blessings." });
+  }
+};
+
+/**
+ * @desc Like a blessing (Public)
+ * @route POST /api/blessings/like/:blessingId
+ */
+export const likeBlessing = async (req: Request, res: Response): Promise<void> => {
+  const blessingId = req.params.blessingId as string;
+  const deviceId = req.headers['x-device-id'] as string;
+
+  if (!blessingId) {
+    res.status(400).json({ message: "Blessing ID is required." });
+    return;
+  }
+
+  if (!deviceId) {
+    res.status(400).json({ message: "Device ID header (x-device-id) is required." });
+    return;
+  }
+
+  try {
+    await blessingRepositories.likeBlessing(blessingId, deviceId);
+    res.status(200).json({ message: "Blessing liked successfully." });
+  } catch (error) {
+    logger.error(`Error liking blessing ${blessingId}: ${error}`);
+    res.status(500).json({ message: "Failed to like blessing." });
   }
 };

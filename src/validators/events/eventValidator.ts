@@ -35,6 +35,8 @@ export const createEventValidator = z.object({
   start_time: timeStringSchema,
   end_time: timeStringSchema,
   location: z.string().min(1, "Location is required."),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   dress_code: z
     .string()
     .max(100, "Dress code description is too long.")
@@ -61,6 +63,8 @@ export const updateEventValidator = z.object({
   start_time: timeStringSchema.optional(),
   end_time: timeStringSchema.optional(),
   location: z.string().min(1, "Location cannot be empty.").optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   dress_code: z
     .string()
     .max(100, "Dress code description is too long.")

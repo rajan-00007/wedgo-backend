@@ -1,10 +1,17 @@
 import { Router } from "express";
 import { createBlessing } from "../../controllers/blessings/createBlessing";
-import { getAdminBlessings, toggleBlessingPin, getPublicBlessings, getAllBlessings } from "../../controllers/blessings/blessingsController";
+import { getAdminBlessings, toggleBlessingPin, getPublicBlessings, getAllBlessings, likeBlessing } from "../../controllers/blessings/blessingsController";
 import { authenticateToken } from "../../middlewares/auth/authMiddleware";
 import { upload } from "../../middlewares/multer/upload";
 
 const router = Router();
+
+/**
+ * @route POST /api/blessings/like/:blessingId
+ * @desc Like a blessing
+ * @access Public
+ */
+router.post("/like/:blessingId", likeBlessing);
 
 /**
  * @route POST /api/blessings/:coupleId

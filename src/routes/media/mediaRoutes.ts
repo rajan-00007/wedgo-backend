@@ -1,9 +1,16 @@
 import { Router } from "express";
-import { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia, getAllMedia } from "../../controllers/media/mediaController";
+import { uploadMedia, getAdminMedia, toggleMediaPin, getPublicMedia, getAllMedia, likeMedia } from "../../controllers/media/mediaController";
 import { authenticateToken } from "../../middlewares/auth/authMiddleware";
 import { upload, uploadMediaFiles } from "../../middlewares/multer/upload";
 
 const router = Router();
+
+/**
+ * @route POST /api/media/like/:mediaId
+ * @desc Like a media
+ * @access Public
+ */
+router.post("/like/:mediaId", likeMedia);
 
 /**
  * @route POST /api/media/:coupleId

@@ -21,7 +21,7 @@ export class EventsController {
       return;
     }
 
-    const { name, event_date, start_time, end_time, dress_code, description, location } = req.body;
+    const { name, event_date, start_time, end_time, dress_code, description, location, latitude, longitude } = req.body;
     const userId = (req as any).user.id;
 
     try {
@@ -41,6 +41,8 @@ export class EventsController {
         dress_code,
         description,
         location,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
       });
   
       logger.info(`Event created: ${event.id} for couple: ${profile.id}`);

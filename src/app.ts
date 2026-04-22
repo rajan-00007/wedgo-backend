@@ -15,9 +15,29 @@ import logger from './utils/logger';
 const app: Application = express();
 
 // Middleware
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost',
+  'capacitor://localhost'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+      return;
+    }
+    // In development, allow any origin (supports dynamic hostname for same-site cookies)
+    if (process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-device-id']
 }));
 app.use(cookieParser());
 app.use(express.json());

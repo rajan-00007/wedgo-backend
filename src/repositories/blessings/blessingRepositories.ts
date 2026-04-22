@@ -34,10 +34,15 @@ export class BlessingsRepository {
     return result.rows[0];
   }
 
-  async findByCoupleId(coupleId: string): Promise<Blessing[]> {
+  async findByCoupleId(coupleId: string, deviceId?: string): Promise<any[]> {
     const result = await pool.query(
-      "SELECT * FROM blessings WHERE couple_id = $1 ORDER BY is_pinned DESC, created_at DESC",
-      [coupleId]
+      `SELECT b.*, 
+              (SELECT COUNT(*) FROM blessing_likes WHERE blessing_id = b.id) as likes_count,
+              EXISTS (SELECT 1 FROM blessing_likes WHERE blessing_id = b.id AND user_device_id = $2) as liked
+       FROM blessings b 
+       WHERE b.couple_id = $1 
+       ORDER BY b.is_pinned DESC, b.created_at DESC`,
+      [coupleId, deviceId || ""]
     );
     return result.rows;
   }
@@ -60,10 +65,15 @@ export class BlessingsRepository {
     return result.rows[0] || null;
   }
 
-  async findPinnedByCoupleId(coupleId: string): Promise<Blessing[]> {
+  async findPinnedByCoupleId(coupleId: string, deviceId?: string): Promise<any[]> {
     const result = await pool.query(
-      "SELECT * FROM blessings WHERE couple_id = $1 AND is_pinned = TRUE ORDER BY created_at DESC",
-      [coupleId]
+      `SELECT b.*, 
+              (SELECT COUNT(*) FROM blessing_likes WHERE blessing_id = b.id) as likes_count,
+              EXISTS (SELECT 1 FROM blessing_likes WHERE blessing_id = b.id AND user_device_id = $2) as liked
+       FROM blessings b 
+       WHERE b.couple_id = $1 AND b.is_pinned = TRUE 
+       ORDER BY b.created_at DESC`,
+      [coupleId, deviceId || ""]
     );
     return result.rows;
   }
@@ -71,6 +81,15 @@ export class BlessingsRepository {
   async countByCoupleId(coupleId: string): Promise<number> {
     const result = await pool.query("SELECT COUNT(*) FROM blessings WHERE couple_id = $1", [coupleId]);
     return parseInt(result.rows[0].count, 10) || 0;
+  }
+
+  async likeBlessing(blessingId: string, deviceId: string): Promise<void> {
+    const query = `
+      INSERT INTO blessing_likes (blessing_id, user_device_id)
+      VALUES ($1, $2)
+      ON CONFLICT (blessing_id, user_device_id) DO NOTHING;
+    `;
+    await pool.query(query, [blessingId, deviceId]);
   }
 }
 

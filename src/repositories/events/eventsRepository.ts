@@ -10,6 +10,8 @@ export interface Event {
   dress_code: string | null;
   description: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -23,6 +25,8 @@ export interface CreateEventDTO {
   dress_code?: string;
   description?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface UpdateEventDTO {
@@ -33,14 +37,16 @@ export interface UpdateEventDTO {
   dress_code?: string;
   description?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 class EventsRepository {
   async createEvent(data: CreateEventDTO): Promise<Event> {
     const result = await pool.query(
       `INSERT INTO events (
-        couple_id, name, event_date, start_time, end_time, dress_code, description, location
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+        couple_id, name, event_date, start_time, end_time, dress_code, description, location, latitude, longitude
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *`,
       [
         data.couple_id,
@@ -51,6 +57,8 @@ class EventsRepository {
         data.dress_code || null,
         data.description || null,
         data.location || null,
+        data.latitude ?? null,
+        data.longitude ?? null,
       ]
     );
     return result.rows[0];
