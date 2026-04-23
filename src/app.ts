@@ -19,6 +19,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:3000',
   'http://localhost',
+  'http://wedgo-dev.infoviz.co',
   'capacitor://localhost'
 ].filter(Boolean);
 
