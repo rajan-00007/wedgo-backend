@@ -1,10 +1,7 @@
 import { Pool, types } from "pg";  
-import * as dotenv from "dotenv";
-
+// Environment variables are loaded in server.ts
 types.setTypeParser(1082, (val) => val); 
 
-
-dotenv.config({ quiet: true } as any);
 
 const pool = new Pool({
   user: process.env.DB_USER,

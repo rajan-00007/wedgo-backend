@@ -33,6 +33,9 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
 COPY package.json ./
+# Copy .env file if it exists (generated during CI/CD build)
+COPY .env* ./
+
 
 # Create the node user (plain alpine doesn't have it)
 RUN addgroup -S node && adduser -S node -G node
