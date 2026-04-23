@@ -1,7 +1,9 @@
 node_modules
 dist
 .git
-.env
+# .env is now allowed so CI/CD can bake it into the image
+# .env
+
 npm-debug.log
 docker-compose.yml
 Dockerfile
