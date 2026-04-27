@@ -27,7 +27,7 @@ export class AuthController {
     try {
       await otpRepository.createOTP(sessionId, phoneNumber, otpCode, expiresAt);
       
-      /* logger.info(`[OTP] Phone: ${phoneNumber}, Code: ${otpCode}, Session: ${sessionId}`); */
+/*       logger.info(`[OTP] Phone: ${phoneNumber}, Code: ${otpCode}, Session: ${sessionId}`); */
 
       try {
         await msg91Provider.send(phoneNumber, `Your OTP is ${otpCode}`, { otp: otpCode });
