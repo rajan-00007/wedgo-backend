@@ -164,7 +164,7 @@ export const deleteNotification = async (req: AuthRequest, res: Response) => {
 
   const { id } = req.params;
 
-  const coupleId = await getCoupleIdFromUser(req.user.id);
+  const coupleId = await getCoupleIdFromUser(req.user.id); 
   if (!coupleId) return res.status(404).json({ error: "Couple profile not found" });
 
   try {
