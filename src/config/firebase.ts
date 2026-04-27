@@ -1,8 +1,11 @@
 import admin from "firebase-admin";
-import serviceAccount from "../../firebase-service.json";
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as any),
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  }),
 });
 
-export const messaging = admin.messaging();
+export const messaging = admin.messaging();
