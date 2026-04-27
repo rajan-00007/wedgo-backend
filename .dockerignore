@@ -11,3 +11,4 @@ Dockerfile
 coverage
 test_output.txt
 setup.sql
+firebase-service.json
