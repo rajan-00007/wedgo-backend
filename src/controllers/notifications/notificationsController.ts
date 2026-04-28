@@ -108,13 +108,32 @@ export const sendNotification = async (req: AuthRequest, res: Response) => {
 export const getNotifications = async (req: Request, res: Response) => {
   // Check for coupleId in query (standard for GET) or body
   const coupleId = (req.query.coupleId as string) || req.body.coupleId;
+  const token = req.query.token as string; // From guest frontend
 
   if (!coupleId) {
     return res.status(400).json({ error: "coupleId is required" });
   }
 
   try {
-    const notifications = await notificationRepository.getNotificationsByCoupleId(coupleId);
+    let notifications;
+    if (token) {
+      // It's a guest request
+      const access = await notificationRepository.findAccessByToken(token, coupleId);
+      if (!access) {
+        return res.status(401).json({ error: "Invalid guest token" });
+      }
+      
+      if (access.access_type === 'all') {
+        notifications = await notificationRepository.getNotificationsForGuest(coupleId, 'all');
+      } else {
+        const allowedEventIds = await notificationRepository.getAllowedEventIds(access.id);
+        notifications = await notificationRepository.getNotificationsForGuest(coupleId, allowedEventIds);
+      }
+    } else {
+      // Admin dashboard request (no token query param passed)
+      notifications = await notificationRepository.getNotificationsByCoupleId(coupleId);
+    }
+
     return res.status(200).json(notifications);
   } catch (error) {
     logger.error("Error fetching notifications:", error);

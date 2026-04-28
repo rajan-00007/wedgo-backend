@@ -8,6 +8,7 @@ export interface Notification {
   event_id: string | null;
   message: string;
   created_at: Date;
+  type?: string;
 }
 
 export interface CreateNotificationInput {
@@ -49,8 +50,35 @@ class NotificationRepository {
 
   async getNotificationsByCoupleId(coupleId: string): Promise<Notification[]> {
     const result = await pool.query<Notification>(
-      `SELECT * FROM notifications WHERE couple_id = $1 ORDER BY created_at DESC`,
+      `SELECT *, CASE WHEN event_id IS NULL THEN 'global' ELSE 'event' END as type 
+       FROM notifications WHERE couple_id = $1 ORDER BY created_at DESC`,
       [coupleId]
+    );
+    return result.rows;
+  }
+
+  async getNotificationsForGuest(coupleId: string, allowedEventIds: string[] | 'all'): Promise<Notification[]> {
+    if (allowedEventIds === 'all') {
+      return this.getNotificationsByCoupleId(coupleId);
+    }
+
+    if (allowedEventIds.length === 0) {
+      // Only global notifications
+      const result = await pool.query<Notification>(
+        `SELECT *, 'global' as type 
+         FROM notifications WHERE couple_id = $1 AND event_id IS NULL ORDER BY created_at DESC`,
+        [coupleId]
+      );
+      return result.rows;
+    }
+
+    const result = await pool.query<Notification>(
+      `SELECT *, CASE WHEN event_id IS NULL THEN 'global' ELSE 'event' END as type 
+       FROM notifications 
+       WHERE couple_id = $1 
+         AND (event_id IS NULL OR event_id = ANY($2::uuid[]))
+       ORDER BY created_at DESC`,
+      [coupleId, allowedEventIds]
     );
     return result.rows;
   }
