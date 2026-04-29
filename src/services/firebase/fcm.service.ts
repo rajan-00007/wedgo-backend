@@ -55,6 +55,43 @@ export async function sendToTopic(
 }
 
 /**
+ * Send a data-only notification to multiple device tokens.
+ */
+export async function sendToTokens(
+  tokens: string[],
+  data: { title: string; body: string; event_id?: string; type?: string }
+): Promise<void> {
+  const payload: Record<string, string> = {
+    title: data.title,
+    body: data.body,
+  };
+  if (data.event_id) payload.event_id = data.event_id;
+  if (data.type) payload.type = data.type;
+
+  const BATCH_SIZE = 500;
+  for (let i = 0; i < tokens.length; i += BATCH_SIZE) {
+    const batch = tokens.slice(i, i + BATCH_SIZE);
+    
+    try {
+      const response = await messaging.sendEachForMulticast({
+        tokens: batch,
+        data: payload,
+      });
+
+      if (response.failureCount > 0) {
+        logger.warn(
+          `FCM sendToTokens: ${response.failureCount} failure(s) out of ${batch.length} tokens. Errors: ` +
+          JSON.stringify(response.responses.filter(r => !r.success).map(r => r.error))
+        );
+      }
+    } catch (error) {
+      logger.error(`FCM sendToTokens error for batch ${i}:`, error);
+    }
+  }
+}
+
+
+/**
  * Build the FCM topic name for the global (all-users) channel of a wedding.
  */
 export function globalTopic(coupleId: string): string {

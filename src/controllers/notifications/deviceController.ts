@@ -53,7 +53,7 @@ export const registerDevice = async (req: Request, res: Response) => {
     }
 
     //  4. Upsert token in DB 
-    await notificationRepository.upsertDeviceToken({ couple_id, token, platform });
+    await notificationRepository.upsertDeviceToken({ couple_id, token, platform, access_token });
 
     //  5. Subscribe to topics 
     // Always subscribe to global topic first

@@ -3,6 +3,7 @@ import eventsRepository from "../../repositories/events/eventsRepository";
 import logger from "../../utils/logger";
 import coupleProfileRepository from "../../repositories/coupleProfileRepository";
 import { createEventValidator, updateEventValidator } from "../../validators/events/eventValidator";
+import { scheduleEventNotifications, removeEventNotifications } from "../../queue/scheduler";
 import { ZodError } from "zod";
 
 export class EventsController {
@@ -44,6 +45,18 @@ export class EventsController {
         latitude: latitude ?? null,
         longitude: longitude ?? null,
       });
+
+      // Schedule automated notifications for the sub-event
+      if (event.start_time) {
+        // We only schedule if start_time is provided
+        scheduleEventNotifications(
+          event.id,
+          profile.id,
+          event.name,
+          event.event_date, 
+          event.start_time
+        );
+      }
   
       logger.info(`Event created: ${event.id} for couple: ${profile.id}`);
       res.status(201).json({ message: "Event created successfully.", event });
@@ -115,6 +128,20 @@ export class EventsController {
         return;
       }
 
+      // Re-schedule notifications if start_time exists
+      if (updatedEvent.start_time) {
+        scheduleEventNotifications(
+          updatedEvent.id,
+          updatedEvent.couple_id,
+          updatedEvent.name,
+          updatedEvent.event_date,
+          updatedEvent.start_time
+        );
+      } else {
+        // If time was removed entirely, ensure existing jobs are cleared
+        removeEventNotifications(updatedEvent.id);
+      }
+
       logger.info(`Event updated: ${id}`);
       res.status(200).json({ message: "Event updated successfully.", event: updatedEvent });
     } catch (error) {
@@ -132,6 +159,9 @@ export class EventsController {
         res.status(404).json({ message: "Event not found." });
         return;
       }
+
+      // Clean up scheduled jobs when an event is deleted
+      removeEventNotifications(id as string);
 
       logger.info(`Event deleted: ${id}`);
       res.status(200).json({ message: "Event deleted successfully." });

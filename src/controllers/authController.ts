@@ -27,7 +27,7 @@ export class AuthController {
     try {
       await otpRepository.createOTP(sessionId, phoneNumber, otpCode, expiresAt);
       
-/*       logger.info(`[OTP] Phone: ${phoneNumber}, Code: ${otpCode}, Session: ${sessionId}`); */
+      logger.info(`[OTP] Phone: ${phoneNumber}, Code: ${otpCode}, Session: ${sessionId}`);
 
       try {
         await msg91Provider.send(phoneNumber, `Your OTP is ${otpCode}`, { otp: otpCode });
@@ -174,9 +174,9 @@ export class AuthController {
       logger.error("Refresh token error:", error);
       res.status(500).json({ message: "Failed to refresh token." });
     }
-  }
+  } 
 
-  // 4. Logout
+  // 4. Logout 
   async logout(req: Request, res: Response): Promise<void> {
     const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 

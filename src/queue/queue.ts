@@ -1,0 +1,17 @@
+import { Queue } from 'bullmq';
+import { redisConnection } from './redis';
+
+export const NOTIFICATIONS_QUEUE_NAME = 'notifications';
+
+export const notificationsQueue = new Queue(NOTIFICATIONS_QUEUE_NAME, {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
+    removeOnComplete: true,
+    removeOnFail: 100,
+  },
+});

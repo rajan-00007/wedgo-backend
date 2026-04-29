@@ -2,6 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import logger from '../utils/logger';
 
 export const loggerMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV === 'production') {
+    return next();
+  }
+
+  const { method, originalUrl } = req;
+  logger.http(`--> Incoming Request: ${method} ${originalUrl}`);
+  
   const start = Date.now();
   
   // Log request when it finishes

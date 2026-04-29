@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node dist/server.js",
     "dev": "nodemon --watch src --ext ts,json --exec ts-node src/server.ts",
+    "worker": "ts-node src/queue/worker.ts",
+    "worker:dev": "nodemon --watch src --ext ts,json --exec ts-node src/queue/worker.ts",
     "build": "tsc",
     "test": "jest",
     "test:coverage": "jest --coverage"
@@ -15,11 +17,13 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^1.14.0",
+    "bullmq": "^5.76.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "firebase-admin": "^13.8.0",
+    "ioredis": "^5.10.1",
     "jsonwebtoken": "^9.0.3",
     "minio": "^8.0.7",
     "multer": "^2.1.1",

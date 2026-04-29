@@ -40,6 +40,7 @@ jobs:
               id: build_docker_images
               run: |
                   cat <<EOF > .env
+                  NODE_ENV=production
                   PORT=${{ secrets.DEV_PORT }}
                   DB_USER=${{ secrets.DEV_DB_USER }}
                   DB_PASSWORD=${{ secrets.DEV_DB_PASSWORD }}
@@ -60,6 +61,9 @@ jobs:
                   FIREBASE_PROJECT_ID=${{ secrets.DEV_FIREBASE_PROJECT_ID }}
                   FIREBASE_CLIENT_EMAIL=${{ secrets.DEV_FIREBASE_CLIENT_EMAIL }}
                   FIREBASE_PRIVATE_KEY="${{ secrets.DEV_FIREBASE_PRIVATE_KEY }}"
+                  REDIS_HOST=${{ secrets.DEV_REDIS_HOST }}
+                  REDIS_PORT=${{ secrets.DEV_REDIS_PORT }}
+                  REDIS_PASSWORD=${{ secrets.DEV_REDIS_PASSWORD }}
                   HARBOR_URL=${{ secrets.HARBOR_URL }}
                   HARBOR_PASSWORD=${{ secrets.HARBOR_PASSWORD }}
                   HARBOR_USERNAME=${{ secrets.HARBOR_USERNAME }}

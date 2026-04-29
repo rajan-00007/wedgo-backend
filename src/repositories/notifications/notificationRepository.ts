@@ -31,6 +31,7 @@ export interface CreateDeviceTokenInput {
   couple_id: string;
   token: string;
   platform: "web" | "android" | "ios";
+  access_token?: string;
 }
 
 //  Repository class 
@@ -108,13 +109,14 @@ class NotificationRepository {
 
   async upsertDeviceToken(data: CreateDeviceTokenInput): Promise<UserDeviceToken> {
     const result = await pool.query<UserDeviceToken>(
-      `INSERT INTO user_device_tokens (couple_id, token, platform)
-       VALUES ($1, $2, $3)
+      `INSERT INTO user_device_tokens (couple_id, token, platform, access_token)
+       VALUES ($1, $2, $3, $4)
        ON CONFLICT (token)
        DO UPDATE SET couple_id = EXCLUDED.couple_id,
-                     platform  = EXCLUDED.platform
+                     platform  = EXCLUDED.platform,
+                     access_token = COALESCE(EXCLUDED.access_token, user_device_tokens.access_token)
        RETURNING *`,
-      [data.couple_id, data.token, data.platform]
+      [data.couple_id, data.token, data.platform, data.access_token || null]
     );
     return result.rows[0];
   }
