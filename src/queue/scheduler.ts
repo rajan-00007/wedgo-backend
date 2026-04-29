@@ -42,8 +42,14 @@ export const scheduleEventNotifications = async (
     // First, remove any existing jobs in case this is an update
     await removeEventNotifications(eventId);
 
-    // Combine date and time
-    const dateTimeString = `${eventDate}T${startTime.length === 5 ? startTime + ':00' : startTime}`;
+    // Combine date and time and add IST offset (+05:30)
+    let dateTimeString = `${eventDate}T${startTime.length === 5 ? startTime + ':00' : startTime}`;
+    
+    // If no timezone is provided, assume IST (+05:30)
+    if (!dateTimeString.includes('Z') && !dateTimeString.includes('+')) {
+      dateTimeString += '+05:30';
+    }
+    
     const eventDateTime = new Date(dateTimeString);
 
     logger.info(`[Scheduler] Calculating schedules for Event: "${eventName}" (${eventId}) at ${dateTimeString}`);
