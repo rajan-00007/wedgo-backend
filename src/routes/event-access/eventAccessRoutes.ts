@@ -8,6 +8,7 @@ const router = Router();
 router.get("/generate-full-access", authenticateToken, eventAccessController.generateFullAccess);
 router.post("/generate-custom-access", authenticateToken, eventAccessController.generateCustomAccess);
 router.get("/event/welcome", eventAccessController.getWelcomeDataByToken);
+router.get("/event/og-meta", eventAccessController.getOgMetaByToken); // Public — for WhatsApp/OG link previews
 router.get("/event", eventAccessController.getEventsByToken);
 
 // Record an entry when a user scans QR/opens event link

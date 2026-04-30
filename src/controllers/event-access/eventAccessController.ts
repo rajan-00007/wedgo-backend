@@ -202,3 +202,41 @@ export const getWelcomeDataByToken = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// PUBLIC — No auth required. Used by Next.js generateMetadata for WhatsApp/OG link previews.
+export const getOgMetaByToken = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ error: "token is required" });
+    }
+
+    const access = await eventAccessRepository.findByToken(token);
+
+    if (!access) {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    const profile = await coupleProfileRepository.findById(access.couple_id);
+
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    // Return only what's needed for OG meta tags
+    const ogImage = profile.custom_wallpaper_urls?.[0]
+      ? getFullMediaUrl(profile.custom_wallpaper_urls[0])
+      : null;
+
+    return res.status(200).json({
+      partner1_name: profile.partner1_name,
+      partner2_name: profile.partner2_name,
+      event_date: profile.event_date,
+      og_image: ogImage,
+    });
+  } catch (error) {
+    console.error("Error fetching OG meta by token:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

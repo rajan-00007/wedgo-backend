@@ -18,20 +18,6 @@ const getCoupleIdFromUser = async (userId: string): Promise<string | null> => {
   return profile ? profile.id : null;
 };
 
-/**
- * POST /api/notifications/send
- *
- * Body (global):
- *   { type: "global", title, message }
- *
- * Body (event):
- *   { type: "event", event_id, title, message }
- *
- * 1. Validates input via Zod discriminated union.
- * 2. For "event" type: verifies event belongs to couple.
- * 3. Saves notification row in DB.
- * 4. Sends via FCM topic.
- */
 export const sendNotification = async (req: AuthRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
