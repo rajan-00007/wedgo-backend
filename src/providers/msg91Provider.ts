@@ -1,9 +1,10 @@
 import axios from "axios";
+import logger from "../utils/logger";
 
 export const msg91Provider = {
 
   async send(phone: string, message: string, data?: any) {
-    console.log(`[MSG91 PROVIDER] Attempting to send OTP to ${phone} at ${new Date().toISOString()}`);
+    logger.info(`[MSG91 PROVIDER] Attempting to send OTP to ${phone} at ${new Date().toISOString()}`);
     const authKey = process.env.MSG91_AUTH_KEY?.trim();
     const extractedOtp = data?.otp || message.match(/\d{4,6}/)?.[0] || "";
 
@@ -29,35 +30,35 @@ export const msg91Provider = {
       let response = await makeRequest();
 
       if (response.data?.type === "error" || response.status >= 400) {
-        console.error(`[MSG91 Provider] Primary attempt failed:`, response.data);
-        console.log(`[MSG91 Provider] Using Fallback... Retrying with MSG91 again.`);
-        
+        logger.error(`[MSG91 Provider] Primary attempt failed: ${JSON.stringify(response.data)}`);
+        logger.info(`[MSG91 Provider] Using Fallback... Retrying with MSG91 again.`);
+
         response = await makeRequest();
-        
+
         if (response.data?.type === "error" || response.status >= 400) {
-          console.error(`[MSG91 Provider] Fallback attempt also failed:`, response.data);
+          logger.error(`[MSG91 Provider] Fallback attempt also failed: ${JSON.stringify(response.data)}`);
           throw new Error(`MSG91 fallback failed: ${JSON.stringify(response.data)}`);
         }
       }
 
-      console.log(`[MSG91 Provider] API Response:`, response.data);
+      logger.info(`[MSG91 Provider] API Response: ${JSON.stringify(response.data)}`);
       return response.data;
 
     } catch (error: any) {
-      console.error(`[MSG91 Provider] Exception during primary attempt:`, error.message);
-      console.log(`[MSG91 Provider] Using Fallback... Retrying with MSG91 again.`);
-      
+      logger.error(`[MSG91 Provider] Exception during primary attempt: ${error.message}`);
+      logger.info(`[MSG91 Provider] Using Fallback... Retrying with MSG91 again.`);
+
       try {
         const response = await makeRequest();
-        
+
         if (response.data?.type === "error" || response.status >= 400) {
           throw new Error(`MSG91 fallback failed: ${JSON.stringify(response.data)}`);
         }
 
-        console.log(`[MSG91 Provider] Fallback API Response:`, response.data);
+        logger.info(`[MSG91 Provider] Fallback API Response: ${JSON.stringify(response.data)}`);
         return response.data;
       } catch (fallbackError: any) {
-        console.error(`[MSG91 Provider] Fallback attempt also failed with exception:`, fallbackError.message);
+        logger.error(`[MSG91 Provider] Fallback attempt also failed with exception: ${fallbackError.message}`);
         throw fallbackError;
       }
     }

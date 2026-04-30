@@ -5,7 +5,6 @@ const router = Router();
 
 // Route to send OTP
 router.post("/send-otp", (req, res) => {
-  console.log("POST /api/auth/send-otp hit");
   return authController.sendOTP(req, res);
 });
 

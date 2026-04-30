@@ -9,7 +9,7 @@ const levels = {
 };
 
 const level = () => {
-  return 'debug';
+  return process.env.NODE_ENV === 'production' ? 'error' : 'debug';
 };
 
 const colors = {
