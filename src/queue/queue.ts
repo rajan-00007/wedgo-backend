@@ -3,7 +3,7 @@ import { redisConnection } from './redis';
 
 export const NOTIFICATIONS_QUEUE_NAME = 'notifications';
 
-export const notificationsQueue = new Queue(NOTIFICATIONS_QUEUE_NAME, {
+export const notificationsQueue = redisConnection ? new Queue(NOTIFICATIONS_QUEUE_NAME, {
   connection: redisConnection,
   defaultJobOptions: {
     attempts: 3,
@@ -14,4 +14,4 @@ export const notificationsQueue = new Queue(NOTIFICATIONS_QUEUE_NAME, {
     removeOnComplete: true,
     removeOnFail: 100,
   },
-});
+}) : null as any;

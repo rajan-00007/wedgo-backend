@@ -59,6 +59,7 @@ jobs:
                   REDIS_HOST=${{ secrets.DEV_REDIS_HOST }}
                   REDIS_PORT=${{ secrets.DEV_REDIS_PORT }}
                   REDIS_PASSWORD=${{ secrets.DEV_REDIS_PASSWORD }}
+                  ENABLE_REDIS=true
                   HARBOR_URL=${{ secrets.HARBOR_URL }}
                   HARBOR_PASSWORD=${{ secrets.HARBOR_PASSWORD }}
                   HARBOR_USERNAME=${{ secrets.HARBOR_USERNAME }}

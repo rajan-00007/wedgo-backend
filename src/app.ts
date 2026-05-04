@@ -11,6 +11,7 @@ import eventAccessRoutes from './routes/event-access/eventAccessRoutes';
 import paymentRoutes from './routes/payment-setup/paymentRoutes';
 import notificationRoutes from './routes/notifications/notificationsRoutes';
 import deviceRoutes from './routes/notifications/deviceRoutes';
+import musicRoutes from './routes/musicRoutes';
 import { loggerMiddleware } from './middlewares/loggerMiddleware';
 import logger from './utils/logger';
 
@@ -62,6 +63,7 @@ app.use('/api', eventAccessRoutes);
 app.use('/api/payment-setup', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/devices', deviceRoutes);
+app.use('/api/music-library', musicRoutes);
 
 app.get('/', (req: Request, res: Response) => {
   res.status(200).json({

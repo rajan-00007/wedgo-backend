@@ -23,4 +23,7 @@ router.get("/stats/:coupleId", (req, res) => profileController.getProfileStats(r
 // Public route to get hero page data (wallpapers & time block)
 router.get("/hero/:coupleId", (req, res) => profileController.getHeroPageData(req, res));
 
+// Protected route to select music from library
+router.patch("/music", authenticateToken, (req, res) => profileController.updateMusic(req, res));
+
 export default router;

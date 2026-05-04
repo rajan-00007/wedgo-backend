@@ -10,6 +10,7 @@ export interface CoupleProfile {
   wallpaper_id?: string;
   custom_wallpaper_urls?: string[];
   time_block_type?: number;
+  selected_music_id?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -70,6 +71,17 @@ export class CoupleProfileRepository {
          updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $3`,
       [urls, timeBlockType || null, userId]
+    );
+  }
+
+  async updateSelectedMusic(userId: string, musicId: string | null): Promise<void> {
+    await pool.query(
+      `UPDATE couple_profiles
+       SET 
+         selected_music_id = $1,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $2`,
+      [musicId, userId]
     );
   }
 }

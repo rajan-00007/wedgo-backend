@@ -96,19 +96,21 @@ const processNotificationJob = async (job: Job<NotificationJobData>) => {
   }
 };
 
-export const notificationsWorker = new Worker(
+export const notificationsWorker = redisConnection ? new Worker(
   NOTIFICATIONS_QUEUE_NAME,
   processNotificationJob,
   {
     connection: redisConnection,
     concurrency: 5,
   }
-);
+) : null as any;
 
-notificationsWorker.on('completed', (job) => {
-  logger.info(`Job ${job.id} has completed!`);
-});
+if (notificationsWorker) {
+  notificationsWorker.on('completed', (job: Job) => {
+    logger.info(`Job ${job.id} has completed!`);
+  });
 
-notificationsWorker.on('failed', (job, err) => {
-  logger.error(`Job ${job?.id} has failed with ${err.message}`);
-});
+  notificationsWorker.on('failed', (job: Job | undefined, err: Error) => {
+    logger.error(`Job ${job?.id} has failed with ${err.message}`);
+  });
+}

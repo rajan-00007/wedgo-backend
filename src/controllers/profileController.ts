@@ -3,6 +3,7 @@ import coupleProfileRepository from "../repositories/coupleProfileRepository";
 import mediaRepository from "../repositories/media/mediaRepository";
 import blessingRepositories from "../repositories/blessings/blessingRepositories";
 import eventEntriesRepository from "../repositories/events/eventEntriesRepository";
+import musicRepository from "../repositories/musicRepository";
 import { uploadImage } from "../services/minio/minio.service";
 import { getFullMediaUrl } from "../utils/urlUtils";
 
@@ -141,16 +142,44 @@ export class ProfileController {
         return;
       }
 
+      let musicUrl = null;
+      if (profile.selected_music_id) {
+        const tracks = await musicRepository.getAllActiveTracks();
+        const selectedTrack = tracks.find(t => t.id === profile.selected_music_id);
+        if (selectedTrack) {
+          musicUrl = selectedTrack.file_url;
+        }
+      }
+
       res.status(200).json({
         partner1_name: profile.partner1_name,
         partner2_name: profile.partner2_name,
         event_date: profile.event_date,
         custom_wallpaper_urls: profile.custom_wallpaper_urls?.map((url: string) => getFullMediaUrl(url)) || [],
-        time_block_type: profile.time_block_type || null
+        time_block_type: profile.time_block_type || null,
+        music_url: musicUrl
       });
     } catch (error) {
       console.error("Error getting hero page data:", error);
       res.status(500).json({ message: "Failed to get hero page data." });
+    }
+  }
+
+  async updateMusic(req: Request, res: Response): Promise<void> {
+    const { music_id } = req.body;
+    const userId = (req as any).user.id;
+
+    if (!music_id) {
+      res.status(400).json({ message: "music_id is required." });
+      return;
+    }
+
+    try {
+      await coupleProfileRepository.updateSelectedMusic(userId, music_id);
+      res.status(200).json({ message: "Music preference updated successfully." });
+    } catch (error) {
+      console.error("Error updating music preference:", error);
+      res.status(500).json({ message: "Failed to update music preference." });
     }
   }
 }

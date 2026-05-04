@@ -15,8 +15,10 @@ export const removeEventNotifications = async (eventId: string) => {
   for (const type of types) {
     const jobId = `${eventId}-${type}`;
     try {
-      await notificationsQueue.remove(jobId);
-      logger.info(`[Scheduler] Removed existing job: ${jobId}`);
+      if (notificationsQueue) {
+        await notificationsQueue.remove(jobId);
+        logger.info(`[Scheduler] Removed existing job: ${jobId}`);
+      }
     } catch (error) {
       logger.error(`[Scheduler] Error removing job ${jobId}:`, error);
     }
@@ -78,22 +80,25 @@ export const scheduleEventNotifications = async (
       }
 
       const jobId = `${eventId}-${schedule.type}`;
-
-      await notificationsQueue.add(
-        schedule.type,
-        {
-          eventId,
-          coupleId,
-          eventName,
-          type: schedule.type,
-        },
-        {
-          delay,
-          jobId,
-        }
-      );
-
-      logger.info(`[Scheduler] Job Queued: "${schedule.type}" for "${eventName}". Executes in: ${Math.round(delay / 1000)}s`);
+      
+      if (notificationsQueue) {
+        await notificationsQueue.add(
+          schedule.type,
+          {
+            eventId,
+            coupleId,
+            eventName,
+            type: schedule.type,
+          },
+          {
+            delay,
+            jobId,
+          }
+        );
+        logger.info(`[Scheduler] Job Queued: "${schedule.type}" for "${eventName}". Executes in: ${Math.round(delay / 1000)}s`);
+      } else {
+        logger.warn(`[Scheduler] Redis disabled. Skipping queueing for ${schedule.type}`);
+      }
     }
 
   } catch (error) {

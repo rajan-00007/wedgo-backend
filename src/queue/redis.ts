@@ -13,12 +13,18 @@ const redisConfig = {
   maxRetriesPerRequest: null,
 };
 
-export const redisConnection = new Redis(redisConfig);
+const isRedisEnabled = process.env.ENABLE_REDIS === 'true';
 
-redisConnection.on('error', (err) => {
-  logger.error(`Redis connection error: ${err}`);
-});
+export const redisConnection = isRedisEnabled 
+  ? new Redis(redisConfig) 
+  : null as any;
 
-redisConnection.on('connect', () => {
-  logger.info('Connected to Redis successfully');
-});
+if (redisConnection) {
+  redisConnection.on('error', (err: any) => {
+    logger.error(`Redis connection error: ${err}`);
+  });
+
+  redisConnection.on('connect', () => {
+    logger.info('Connected to Redis successfully');
+  });
+}
